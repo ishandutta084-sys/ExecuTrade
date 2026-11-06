@@ -1,0 +1,18 @@
+# Secrets & Environment variables
+.env
+
+# SQLite Database & Storage
+*.db
+*.db-journal
+*.sqlite3
+
+# Python cache & virtual environment
+__pycache__/
+*.py[cod]
+*.class
+.venv/
+venv/
+env/
+
+# Compiled MQL5 binary
+*.ex5
