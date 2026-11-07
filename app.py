@@ -9,6 +9,8 @@ from typing import Literal
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel, Field
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 # ==========================================
 # 0. LOGGING CONFIGURATION
@@ -40,10 +42,14 @@ MT5_API_KEY = os.getenv("MT5_API_KEY", "").strip()
 if not MT5_API_KEY:
     raise RuntimeError("MT5_API_KEY is missing from .env")
 
-# Timeout in seconds before an unconfirmed PROCESSING signal is reset
 STALE_SIGNAL_TIMEOUT_SECONDS = 60
-# Maximum attempts before a signal is marked permanently FAILED
 MAX_EXECUTION_ATTEMPTS = 3
+
+# Bridge operational state
+BRIDGE_STATE = {
+    "ea_ingestion_paused": False,
+    "last_polled_at": None,
+}
 
 # ==========================================
 # 2. DATABASE UTILITIES
@@ -57,7 +63,6 @@ def get_connection():
 
 def init_db():
     with get_connection() as conn:
-        # Core signals queue table
         conn.execute("""
             CREATE TABLE IF NOT EXISTS webhook_signals (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,7 +78,6 @@ def init_db():
             )
         """)
 
-        # Separate execution history & audit trail table
         conn.execute("""
             CREATE TABLE IF NOT EXISTS execution_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,7 +90,6 @@ def init_db():
             )
         """)
 
-        # Check existing columns in webhook_signals
         existing_columns = {
             row["name"]
             for row in conn.execute(
@@ -94,7 +97,6 @@ def init_db():
             ).fetchall()
         }
 
-        # Add new columns gracefully if not present
         new_columns = {
             "order_ticket": "TEXT",
             "execution_message": "TEXT",
@@ -110,16 +112,14 @@ def init_db():
 
         conn.commit()
 
-
 # ==========================================
-# 3. FASTAPI APPLICATION LIFESPAN
+# 3. FASTAPI APPLICATION LIFESPAN & APP INIT
 # ==========================================
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     yield
-
 
 app = FastAPI(
     title="ExecuTrade",
@@ -128,6 +128,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Ensure static directory exists
+STATIC_DIR = BASE_DIR / "static"
+STATIC_DIR.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # ==========================================
 # 4. REQUEST SCHEMAS
@@ -150,15 +154,28 @@ class ExecutionResult(BaseModel):
     execution_message: str | None = None
 
 
+class TestSignalRequest(BaseModel):
+    signal_id: str
+    strategy: str
+    action: Literal["BUY", "SELL"]
+    symbol: str
+    lot: float
+    sl: float
+    tp: float
+
 # ==========================================
-# 5. GENERAL ENDPOINTS
+# 5. GENERAL & DASHBOARD ENDPOINTS
 # ==========================================
 
 @app.get("/")
 def home():
+    dashboard_file = STATIC_DIR / "index.html"
+    if dashboard_file.exists():
+        return FileResponse(dashboard_file)
     return {
         "message": "ExecuTrade Bridge is running!",
-        "status": "ONLINE"
+        "status": "ONLINE",
+        "dashboard": "/dashboard"
     }
 
 
@@ -178,6 +195,80 @@ def health():
             detail="Database connection failed"
         )
 
+
+@app.get("/dashboard", include_in_schema=False)
+def get_dashboard():
+    dashboard_file = STATIC_DIR / "index.html"
+    if not dashboard_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Dashboard file not found in static/index.html"
+        )
+    return FileResponse(dashboard_file)
+
+
+@app.get("/api/signals")
+def get_all_signals():
+    try:
+        with get_connection() as conn:
+            rows = conn.execute("""
+                SELECT id, signal_id, strategy, action, symbol, lot, sl, tp, status, 
+                       order_ticket, execution_message, attempts, updated_at, created_at 
+                FROM webhook_signals 
+                ORDER BY id DESC 
+                LIMIT 100
+            """).fetchall()
+            return [dict(ix) for ix in rows]
+    except sqlite3.Error:
+        raise HTTPException(status_code=500, detail="Failed to fetch signals")
+
+
+@app.get("/api/bridge/status")
+def get_bridge_status():
+    return {
+        "ea_ingestion_paused": BRIDGE_STATE.get("ea_ingestion_paused", False),
+        "mt5_connected": True,
+        "database": "INITIALIZED",
+        "stale_timeout_seconds": STALE_SIGNAL_TIMEOUT_SECONDS,
+        "max_attempts": MAX_EXECUTION_ATTEMPTS
+    }
+
+
+@app.post("/api/bridge/toggle-pause")
+def toggle_bridge_pause():
+    BRIDGE_STATE["ea_ingestion_paused"] = not BRIDGE_STATE.get("ea_ingestion_paused", False)
+    logger.info("EA ingestion pause toggled to: %s", BRIDGE_STATE["ea_ingestion_paused"])
+    return {
+        "status": "SUCCESS",
+        "ea_ingestion_paused": BRIDGE_STATE["ea_ingestion_paused"]
+    }
+
+
+@app.post("/api/test-signal")
+def post_test_signal(req: TestSignalRequest):
+    try:
+        with get_connection() as conn:
+            conn.execute("""
+                INSERT INTO webhook_signals
+                (signal_id, strategy, action, symbol, lot, sl, tp, attempts)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+            """, (
+                req.signal_id,
+                req.strategy,
+                req.action,
+                req.symbol,
+                req.lot,
+                req.sl,
+                req.tp
+            ))
+            conn.commit()
+
+        logger.info("Test signal dispatched via console: %s", req.signal_id)
+        return {"status": "SUCCESS", "signal_id": req.signal_id}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=409, detail="Duplicate signal ID")
+    except sqlite3.Error:
+        raise HTTPException(status_code=500, detail="Database write failed")
 
 # ==========================================
 # 6. TRADINGVIEW WEBHOOK INGESTION
@@ -238,7 +329,6 @@ def receive_signal(signal: TradingSignal):
             detail="Database storage failed"
         )
 
-
 # ==========================================
 # 7. MT5 SIGNAL CLAIMING & DEAD-LETTER RECOVERY
 # ==========================================
@@ -252,6 +342,13 @@ def claim_next_signal(
             status_code=401,
             detail="Invalid MT5 authentication key"
         )
+
+    if BRIDGE_STATE.get("ea_ingestion_paused", False):
+        return {
+            "status": "PAUSED",
+            "message": "EA ingestion is currently paused by operator",
+            "signal": None
+        }
 
     try:
         with get_connection() as conn:
@@ -331,17 +428,14 @@ def claim_next_signal(
             return {
                 "status": "CLAIMED",
                 "message": "Signal successfully assigned to MT5",
-                "signal": {
-                    "id": signal["id"],
-                    "signal_id": signal["signal_id"],
-                    "strategy": signal["strategy"],
-                    "action": signal["action"],
-                    "symbol": signal["symbol"],
-                    "lot": signal["lot"],
-                    "sl": signal["sl"],
-                    "tp": signal["tp"],
-                    "attempt": current_attempts
-                }
+                "signal_id": signal["signal_id"],
+                "strategy": signal["strategy"],
+                "action": signal["action"],
+                "symbol": signal["symbol"],
+                "lot": signal["lot"],
+                "sl": signal["sl"],
+                "tp": signal["tp"],
+                "attempt": current_attempts
             }
 
     except sqlite3.Error:
@@ -350,7 +444,6 @@ def claim_next_signal(
             status_code=500,
             detail="Failed to claim signal from database"
         )
-
 
 # ==========================================
 # 8. MT5 EXECUTION RESULT UPDATE & AUDIT LOG
@@ -390,7 +483,6 @@ def update_execution_result(
                     detail=f"Signal cannot be updated from {signal['status']}"
                 )
 
-            # Update core signal status
             conn.execute("""
                 UPDATE webhook_signals
                 SET status = ?,
@@ -405,7 +497,6 @@ def update_execution_result(
                 signal_id
             ))
 
-            # Record audit trail into execution_logs
             conn.execute("""
                 INSERT INTO execution_logs
                 (signal_id, attempt_number, status, order_ticket, message)

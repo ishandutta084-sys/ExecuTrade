@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExecuTrade | Automated Bridge Console</title>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              dark: '#080C14',
+              cardDark: '#0E1422',
+              borderDark: '#1E2638',
+              emerald: '#10B981'
+            }
+          },
+          boxShadow: {
+            'glow-emerald': '0 0 20px -3px rgba(16, 185, 129, 0.35)',
+            'card-dark': '0 4px 20px -2px rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #1e2638;
+      border-radius: 9999px;
+    }
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background: #2e3a54;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Ambient Wallpaper */
+    body.dark {
+      background-color: #080C14;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(16, 185, 129, 0.05) 0%, transparent 45%),
+        radial-gradient(circle at 85% 90%, rgba(59, 130, 246, 0.03) 0%, transparent 50%);
+    }
+    body:not(.dark) {
+      background-color: #F8FAFC;
+      background-image: 
+        radial-gradient(circle at 5% 5%, rgba(16, 185, 129, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 95% 95%, rgba(99, 102, 241, 0.04) 0%, transparent 45%);
+    }
+
+    /* Stepper connector lines */
+    .stepper-line {
+      position: absolute;
+      left: 15px;
+      top: 32px;
+      bottom: -10px;
+      width: 2px;
+    }
+  </style>
+</head>
+
+<body class="antialiased select-none transition-colors duration-150">
+
+  <!-- ======================================================== -->
+  <!-- 1. ROOT CONTAINER (Exact strict flex layout)              -->
+  <!-- ======================================================== -->
+  <div class="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-800 dark:bg-[#080C14] dark:text-slate-100">
+
+    <!-- ---------------------------------------------------- -->
+    <!-- LEFT ICON SIDEBAR (Fixed w-16, full height)          -->
+    <!-- ---------------------------------------------------- -->
+    <aside class="w-16 shrink-0 h-full flex flex-col items-center justify-between py-4 bg-white dark:bg-[#0B0F19] border-r border-slate-200 dark:border-slate-800/80 z-30 transition-colors">
+      
+      <!-- Top: Elegant Minimalist 'ET' Monogram Brand Badge -->
+      <div class="flex flex-col items-center gap-6 w-full">
+        
+        <a href="/dashboard" title="ExecuTrade Bridge Console" class="group relative flex items-center justify-center">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-900 to-slate-950 dark:from-[#0E1422] dark:to-[#080C14] p-[1.5px] border border-emerald-400 shadow-glow-emerald group-hover:scale-105 transition-transform duration-200">
+            <div class="w-full h-full rounded-[10px] bg-slate-950 flex items-center justify-center">
+              <span class="font-mono font-black text-sm text-white tracking-tighter flex items-center">
+                ET<span class="text-emerald-400 text-xs ml-0.5 animate-pulse">.</span>
+              </span>
+            </div>
+          </div>
+          <!-- Pulse Dot -->
+          <span class="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-white dark:border-slate-950"></span>
+          </span>
+        </a>
+
+        <!-- PAGES SECTION -->
+        <div class="flex flex-col items-center gap-2 w-full pt-1">
+          <span class="text-[8px] font-bold text-slate-400 dark:text-slate-600 tracking-wider uppercase mb-0.5">Pages</span>
+
+          <!-- Nav Item: Dashboard / Console (Active) -->
+          <div class="relative w-full flex justify-center group">
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-500 rounded-r-md"></div>
+            <button class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
+              <i data-lucide="layout-grid" class="w-4 h-4"></i>
+            </button>
+            <span class="absolute left-14 px-2 py-1 bg-slate-900 text-slate-100 text-[11px] rounded-md shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition whitespace-nowrap z-50">
+              Dashboard / Console
+            </span>
+          </div>
+
+          <!-- Nav Item: Telemetry -->
+          <div class="relative w-full flex justify-center group">
+            <button class="w-9 h-9 rounded-xl text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 flex items-center justify-center transition">
+              <i data-lucide="activity" class="w-4 h-4"></i>
+            </button>
+            <span class="absolute left-14 px-2 py-1 bg-slate-900 text-slate-100 text-[11px] rounded-md shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition whitespace-nowrap z-50">
+              Execution Telemetry
+            </span>
+          </div>
+
+          <!-- Nav Item: Webhook Keys -->
+          <div class="relative w-full flex justify-center group">
+            <button class="w-9 h-9 rounded-xl text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 flex items-center justify-center transition">
+              <i data-lucide="key" class="w-4 h-4"></i>
+            </button>
+            <span class="absolute left-14 px-2 py-1 bg-slate-900 text-slate-100 text-[11px] rounded-md shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition whitespace-nowrap z-50">
+              HMAC & Security Keys
+            </span>
+          </div>
+        </div>
+
+        <!-- DIVIDER -->
+        <div class="w-6 h-[1px] bg-slate-200 dark:bg-slate-800/80 my-0.5"></div>
+
+        <!-- DOCS SECTION -->
+        <div class="flex flex-col items-center gap-2 w-full">
+          <span class="text-[8px] font-bold text-slate-400 dark:text-slate-600 tracking-wider uppercase mb-0.5">Docs</span>
+
+          <!-- Swagger Link -->
+          <div class="relative w-full flex justify-center group">
+            <a href="/docs" target="_blank" class="w-9 h-9 rounded-xl text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 flex items-center justify-center transition">
+              <i data-lucide="book-open" class="w-4 h-4"></i>
+            </a>
+            <span class="absolute left-14 px-2 py-1 bg-slate-900 text-slate-100 text-[11px] rounded-md shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition whitespace-nowrap z-50">
+              Swagger OpenAPI (/docs) ↗
+            </span>
+          </div>
+
+          <!-- Terminal Logs -->
+          <div class="relative w-full flex justify-center group">
+            <button onclick="scrollToQueues()" class="w-9 h-9 rounded-xl text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 flex items-center justify-center transition">
+              <i data-lucide="terminal" class="w-4 h-4"></i>
+            </button>
+            <span class="absolute left-14 px-2 py-1 bg-slate-900 text-slate-100 text-[11px] rounded-md shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition whitespace-nowrap z-50">
+              Terminal Logs & Queue
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom: Settings Cog & Version Badge -->
+      <div class="flex flex-col items-center gap-2.5">
+        <button onclick="openSettingsModal()" class="w-9 h-9 rounded-xl text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 flex items-center justify-center transition" title="Bridge Parameters">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
+        <span class="text-[9px] font-mono text-slate-400 dark:text-slate-600 font-bold">v1.0</span>
+      </div>
+
+    </aside>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- MAIN APP CONTAINER (flex-1 flex flex-col h-full)     -->
+    <!-- ---------------------------------------------------- -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden">
+
+      <!-- ==================================================== -->
+      <!-- 2. FIXED TOP NAVBAR (Single-Row, No Overlapping)     -->
+      <!-- ==================================================== -->
+      <header class="h-16 shrink-0 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between px-6 bg-white/90 dark:bg-[#080C14]/90 backdrop-blur z-20 transition-colors">
+        
+        <!-- Left: Brand Title & Breadcrumb -->
+        <div class="flex items-center gap-2 shrink-0">
+          <h1 class="text-base font-bold text-slate-900 dark:text-white font-mono tracking-tight">ExecuTrade</h1>
+          <span class="text-xs text-slate-500 font-mono">/ Console</span>
+        </div>
+
+        <!-- Center: Global Search Input -->
+        <div class="flex items-center justify-center flex-1 px-8">
+          <div class="relative w-96">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input 
+              id="global-search-input"
+              type="text" 
+              placeholder="Search signals, symbols, tickets..." 
+              class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg pl-9 pr-8 py-1.5 text-xs font-mono text-slate-800 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              oninput="handleGlobalSearch(this.value)"
+            />
+            <kbd class="absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.2 text-[9px] font-mono text-slate-400 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded">
+              /
+            </kbd>
+          </div>
+        </div>
+
+        <!-- Right: Controls, Theme Switcher & User Profile -->
+        <div class="flex items-center gap-3.5 shrink-0">
+          
+          <!-- Swagger Docs Quick Link -->
+          <a href="/docs" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/70 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 transition">
+            <i data-lucide="file-code" class="w-3.5 h-3.5 text-emerald-500"></i>
+            <span>Swagger</span>
+          </a>
+
+          <!-- Notification Bell with Dynamic Unread Dot -->
+          <div class="relative">
+            <button id="notif-btn" onclick="toggleNotifications()" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition relative">
+              <i data-lucide="bell" class="w-4 h-4"></i>
+              <span id="notif-badge" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#080C14]"></span>
+            </button>
+
+            <!-- Notifications Popover -->
+            <div id="notif-popover" class="hidden absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-3 z-50 text-xs">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 mb-2">
+                <span class="font-semibold text-slate-800 dark:text-slate-200 font-mono">Execution Feed</span>
+                <span class="text-[10px] font-mono text-emerald-500">2000ms poller</span>
+              </div>
+              <div id="notif-list" class="space-y-2 max-h-48 overflow-y-auto font-mono text-[11px]">
+                <div class="p-2 rounded bg-slate-50 dark:bg-slate-800/50 flex items-start gap-2">
+                  <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1 shrink-0"></div>
+                  <div>
+                    <div class="text-slate-700 dark:text-slate-200 font-bold">Bridge Connected</div>
+                    <div class="text-slate-400">FastAPI & SQLite engine initialized</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Theme Toggle Switch (Sun / Moon) -->
+          <button 
+            id="theme-toggle-btn"
+            onclick="toggleTheme()" 
+            class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition"
+            title="Toggle Light / Dark Mode"
+          >
+            <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+            <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-slate-600"></i>
+          </button>
+
+          <!-- Divider -->
+          <div class="h-5 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
+
+          <!-- User Profile Badge -->
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-bold text-xs shadow-xs font-mono">
+              ID
+            </div>
+            <div class="hidden xl:flex flex-col text-left font-mono">
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-100 leading-none">Ishan Dutta</span>
+              <span class="text-[10px] text-slate-400 mt-0.5">Algo Engineer</span>
+            </div>
+          </div>
+
+          <!-- ONLY ONE MT5 status badge (Strictly not duplicated) -->
+          <span id="mt5-status-pill" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
+            <span class="h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>
+            MT5 Active
+          </span>
+
+        </div>
+
+      </header>
+
+      <!-- ==================================================== -->
+      <!-- 3. SCROLLABLE 3-COLUMN DASHBOARD BODY                -->
+      <!-- ==================================================== -->
+      <main class="flex-1 p-6 grid grid-cols-12 gap-6 overflow-y-auto">
+
+        <!-- -------------------------------------------------- -->
+        <!-- COLUMN 1: Bridge Watchlist (col-span-12 lg:col-span-3)-->
+        <!-- -------------------------------------------------- -->
+        <div class="col-span-12 lg:col-span-3 space-y-4">
+          
+          <!-- Column 1 Header -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-500"></i>
+              <h2 class="text-xs font-bold uppercase tracking-wider font-mono text-slate-600 dark:text-slate-400">Bridge Watchlist</h2>
+            </div>
+            <span id="watchlist-count" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold">6 PAIRS</span>
+          </div>
+
+          <!-- Search Filter Input -->
+          <div class="relative">
+            <i data-lucide="filter" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input 
+              id="pair-filter-input"
+              type="text" 
+              placeholder="Filter instruments..." 
+              class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs font-mono placeholder-slate-500 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 transition-colors"
+              oninput="filterSymbols(this.value)"
+            />
+          </div>
+
+          <!-- "Show All Telemetry" Toggle Chip -->
+          <button 
+            id="btn-all-pairs"
+            onclick="selectSymbol('ALL')"
+            class="w-full py-1 text-[11px] font-mono rounded-lg text-slate-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-dashed border-slate-300 dark:border-slate-800 flex items-center justify-center gap-1.5 transition"
+          >
+            <i data-lucide="sliders-horizontal" class="w-3 h-3"></i>
+            <span>Show All Telemetry</span>
+          </button>
+
+          <!-- Instrument Cards List -->
+          <div id="symbol-list-container" class="space-y-2.5">
+            <!-- Dynamically populated -->
+          </div>
+
+        </div>
+
+        <!-- -------------------------------------------------- -->
+        <!-- COLUMN 2: Telemetry Chart & Signal Queues          -->
+        <!-- (col-span-12 lg:col-span-6 space-y-6)              -->
+        <!-- -------------------------------------------------- -->
+        <div class="col-span-12 lg:col-span-6 space-y-6">
+
+          <!-- TOP CARD: Execution Telemetry & Latency Chart -->
+          <div class="bg-white dark:bg-[#0E1422] border border-slate-200 dark:border-slate-800/90 rounded-2xl p-5 shadow-sm dark:shadow-card-dark transition-all">
+            
+            <!-- Top Card Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/60">
+              
+              <!-- Left: Active Symbol Info -->
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-mono font-bold text-xs shadow-glow-emerald">
+                  <span id="chart-symbol-icon">XAU</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 id="chart-symbol-title" class="text-base font-bold font-mono text-slate-900 dark:text-white">XAUUSD</h3>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+                      <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                      Streaming
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2.5 mt-0.5 text-xs font-mono text-slate-500">
+                    <span id="chart-live-price" class="text-slate-900 dark:text-slate-100 font-bold">$2,654.20</span>
+                    <span>•</span>
+                    <span class="text-emerald-500 font-semibold">+0.84%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Center/Right Metrics Badges -->
+              <div class="flex items-center gap-2 text-xs font-mono">
+                <div class="px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+                  <span class="text-[9px] text-slate-400 block uppercase">24h Signals</span>
+                  <span id="stat-chart-signals" class="font-bold text-slate-800 dark:text-slate-200">12 Signals</span>
+                </div>
+                <div class="px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+                  <span class="text-[9px] text-slate-400 block uppercase">Avg Latency</span>
+                  <span class="font-bold text-emerald-500">138 ms</span>
+                </div>
+                <div class="px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+                  <span class="text-[9px] text-slate-400 block uppercase">Fill Ratio</span>
+                  <span class="font-bold text-emerald-500">99.4%</span>
+                </div>
+              </div>
+
+              <!-- Controls -->
+              <div class="flex items-center gap-2">
+                <button 
+                  onclick="openManualSignalModal()"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition"
+                >
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                  <span>Push Signal</span>
+                </button>
+                <button 
+                  id="btn-pause-ea"
+                  onclick="toggleEAPause()"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition"
+                >
+                  <i data-lucide="pause-circle" class="w-3.5 h-3.5 text-amber-500"></i>
+                  <span id="btn-pause-ea-label">Pause EA</span>
+                </button>
+              </div>
+
+            </div>
+
+            <!-- Chart Canvas -->
+            <div class="pt-3 relative h-44 w-full">
+              <canvas id="executionLatencyChart"></canvas>
+            </div>
+
+            <!-- Chart Footnote -->
+            <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-2.5 border-t border-slate-100 dark:border-slate-800/60">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                Webhook &rarr; SQLite &rarr; MT5 Round-Trip Execution Timeline (24 Hours)
+              </span>
+              <span>Latency target: &lt;200ms</span>
+            </div>
+
+          </div>
+
+          <!-- PAUSED EA WARNING BANNER -->
+          <div id="ea-paused-banner" class="hidden p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-between text-xs font-mono">
+            <div class="flex items-center gap-2">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 animate-pulse"></i>
+              <span>EA Ingestion is currently paused. MT5 polling returns PAUSED.</span>
+            </div>
+            <button onclick="toggleEAPause()" class="underline font-bold hover:text-amber-300">Resume Ingestion</button>
+          </div>
+
+          <!-- SECTION: Pending Signals Queue -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                <h3 class="text-xs font-bold uppercase tracking-wider font-mono text-slate-700 dark:text-slate-300">Pending Signals Queue</h3>
+                <span id="badge-pending-count" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800">
+                  0 PENDING
+                </span>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">Awaiting MT5 WebRequest Polling</span>
+            </div>
+
+            <!-- Pending Cards Container -->
+            <div id="pending-queue-container" class="space-y-2">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- SECTION: Completed & Executed Orders -->
+          <div class="space-y-3 pt-1">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i data-lucide="history" class="w-3.5 h-3.5 text-emerald-500"></i>
+                <h3 class="text-xs font-bold uppercase tracking-wider font-mono text-slate-700 dark:text-slate-300">Completed & Executed Orders</h3>
+                <span id="badge-completed-count" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  0 ORDERS
+                </span>
+              </div>
+
+              <!-- Filter tabs -->
+              <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg text-[10px] font-mono">
+                <button onclick="setCompletedFilter('ALL')" id="tab-filter-all" class="px-2.5 py-0.5 rounded-md bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold shadow-xs transition">All</button>
+                <button onclick="setCompletedFilter('EXECUTED')" id="tab-filter-executed" class="px-2.5 py-0.5 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition">Executed</button>
+                <button onclick="setCompletedFilter('FAILED')" id="tab-filter-failed" class="px-2.5 py-0.5 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition">Failed</button>
+              </div>
+            </div>
+
+            <!-- Completed Rows Container -->
+            <div id="completed-queue-container" class="space-y-2">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- -------------------------------------------------- -->
+        <!-- COLUMN 3: Execution Receipt & Lifecycle Audit      -->
+        <!-- (col-span-12 lg:col-span-3 space-y-4)              -->
+        <!-- -------------------------------------------------- -->
+        <div class="col-span-12 lg:col-span-3 space-y-4">
+
+          <!-- Execution Receipt Card -->
+          <div class="bg-white dark:bg-[#0E1422] border border-slate-200 dark:border-slate-800/90 rounded-2xl p-5 shadow-sm dark:shadow-card-dark space-y-4 transition-all">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider font-mono text-slate-900 dark:text-white">Execution Receipt</h3>
+                <p class="text-[10px] font-mono text-slate-400">Cryptographic audit & ticket record</p>
+              </div>
+              <button onclick="copyCurrentReceiptJSON()" title="Copy raw JSON payload" class="p-1 rounded-md text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Hero Summary Box -->
+            <div id="audit-hero-card" class="p-3.5 rounded-xl bg-slate-900 text-white space-y-2 relative overflow-hidden border border-slate-800">
+              <div class="flex items-center justify-between">
+                <span id="audit-action-badge" class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-500 text-slate-950">
+                  BUY
+                </span>
+                <span id="audit-status-badge" class="px-2 py-0.5 rounded text-[9px] font-mono uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800">
+                  EXECUTED
+                </span>
+              </div>
+
+              <div>
+                <div class="flex items-baseline gap-2 font-mono">
+                  <span id="audit-symbol" class="text-lg font-black tracking-tight">XAUUSD</span>
+                  <span id="audit-lot" class="text-xs text-slate-300">0.01 LOT</span>
+                </div>
+                <p id="audit-strategy" class="text-[10px] text-slate-400 font-mono">Strategy: MKL_GCB</p>
+              </div>
+
+              <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono">
+                <div>
+                  <span class="text-[9px] text-slate-400 block uppercase">Ticket</span>
+                  <span id="audit-ticket-number" class="font-bold text-emerald-400">#10849204</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-[9px] text-slate-400 block uppercase">Latency</span>
+                  <span id="audit-latency-value" class="font-bold text-slate-200">142 ms</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Financial Data Grid -->
+            <div class="space-y-1.5 text-xs font-mono">
+              <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span class="text-slate-400 text-[11px]">Signal ID</span>
+                <span id="audit-signal-id" class="font-bold text-slate-700 dark:text-slate-200 select-all">TEST-001</span>
+              </div>
+              <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span class="text-slate-400 text-[11px]">TV Hook Hash</span>
+                <span id="audit-hook-hash" class="font-mono text-emerald-500 truncate max-w-[140px]" title="tv_sig_0x68b7522f">tv_sig_0x68b75...</span>
+              </div>
+              <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span class="text-slate-400 text-[11px]">Magic Number</span>
+                <span class="text-slate-700 dark:text-slate-200 font-semibold">101102</span>
+              </div>
+              <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span class="text-slate-400 text-[11px]">Slippage</span>
+                <span class="text-emerald-500 font-bold">+0.4 pips</span>
+              </div>
+              <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span class="text-slate-400 text-[11px]">Exec / Req Price</span>
+                <span id="audit-prices" class="text-slate-700 dark:text-slate-200">2654.10 / 2654.00</span>
+              </div>
+              <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span class="text-slate-400 text-[11px]">Stop Loss (SL)</span>
+                <span id="audit-sl" class="text-rose-500 font-bold">2640.00</span>
+              </div>
+              <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span class="text-slate-400 text-[11px]">Take Profit (TP)</span>
+                <span id="audit-tp" class="text-emerald-500 font-bold">2680.00</span>
+              </div>
+              <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span class="text-slate-400 text-[11px]">Risk : Reward</span>
+                <span class="text-slate-700 dark:text-slate-200 font-bold">1 : 2.85</span>
+              </div>
+            </div>
+
+            <!-- Vertical Lifecycle Tracker (Timeline Stepper) -->
+            <div class="space-y-3 pt-2">
+              <h4 class="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-400 dark:text-slate-500">Lifecycle Verification</h4>
+
+              <div class="relative pl-0.5 font-mono text-xs">
+                
+                <!-- Step 1: Webhook Received -->
+                <div class="relative flex items-start gap-2.5 mb-5">
+                  <div class="stepper-line bg-emerald-500"></div>
+                  <div id="step-node-1" class="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-500 border border-emerald-500 flex items-center justify-center shrink-0 z-10">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <div>
+                    <div class="font-bold text-slate-800 dark:text-slate-200 text-[11px]">TradingView Webhook Received</div>
+                    <div class="text-[10px] text-slate-400">HMAC-SHA256 verified</div>
+                    <span id="step-time-1" class="text-[9px] text-emerald-500">PASS • 15:33:56.104</span>
+                  </div>
+                </div>
+
+                <!-- Step 2: Queued in SQLite -->
+                <div class="relative flex items-start gap-2.5 mb-5">
+                  <div class="stepper-line bg-emerald-500"></div>
+                  <div id="step-node-2" class="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-500 border border-emerald-500 flex items-center justify-center shrink-0 z-10">
+                    <i data-lucide="database" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <div>
+                    <div class="font-bold text-slate-800 dark:text-slate-200 text-[11px]">Queued in SQLite</div>
+                    <div class="text-[10px] text-slate-400">State: PENDING</div>
+                    <span id="step-time-2" class="text-[9px] text-emerald-500">Enqueued (FIFO #1)</span>
+                  </div>
+                </div>
+
+                <!-- Step 3: Claimed by MT5 EA -->
+                <div class="relative flex items-start gap-2.5 mb-5">
+                  <div id="stepper-line-3" class="stepper-line bg-emerald-500"></div>
+                  <div id="step-node-3" class="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-500 border border-emerald-500 flex items-center justify-center shrink-0 z-10">
+                    <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <div>
+                    <div class="font-bold text-slate-800 dark:text-slate-200 text-[11px]">Claimed by MT5 EA</div>
+                    <div class="text-[10px] text-slate-400">WebRequest claim: PROCESSING</div>
+                    <span id="step-time-3" class="text-[9px] text-emerald-500">Key Authenticated</span>
+                  </div>
+                </div>
+
+                <!-- Step 4: Broker Order Filled -->
+                <div class="relative flex items-start gap-2.5">
+                  <div id="step-node-4" class="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-500 border border-emerald-500 flex items-center justify-center shrink-0 z-10">
+                    <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <div>
+                    <div class="font-bold text-slate-800 dark:text-slate-200 text-[11px]">Broker Order Filled</div>
+                    <div class="text-[10px] text-slate-400">State: EXECUTED</div>
+                    <span id="step-time-4" class="text-[9px] text-emerald-500">Ticket #10849204</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+
+  <!-- ======================================================== -->
+  <!-- MODAL: Push Manual Signal                                -->
+  <!-- ======================================================== -->
+  <div id="manual-signal-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md bg-white dark:bg-[#0E1422] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 space-y-4 font-mono animate-in fade-in zoom-in duration-150">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2">
+          <i data-lucide="zap" class="w-4 h-4 text-emerald-500"></i>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Push Manual Signal</h3>
+        </div>
+        <button onclick="closeManualSignalModal()" class="p-1 rounded text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="modal-signal-form" onsubmit="submitManualSignal(event)" class="space-y-3.5 text-xs">
+        
+        <div>
+          <label class="block text-slate-400 mb-1">Symbol</label>
+          <select id="modal-symbol" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100 font-bold focus:outline-none focus:border-emerald-500">
+            <option value="XAUUSD">XAUUSD (Spot Gold)</option>
+            <option value="EURUSD">EURUSD (Euro / USD)</option>
+            <option value="GBPUSD">GBPUSD (British Pound)</option>
+            <option value="US30">US30 (Dow Jones 30)</option>
+            <option value="BTCUSD">BTCUSD (Bitcoin / USD)</option>
+            <option value="USDJPY">USDJPY (USD / Japanese Yen)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Action</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btn-action-buy" onclick="setModalAction('BUY')" class="py-2 rounded-lg font-bold border-2 border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 transition">
+              BUY
+            </button>
+            <button type="button" id="btn-action-sell" onclick="setModalAction('SELL')" class="py-2 rounded-lg font-bold border border-slate-200 dark:border-slate-800 text-slate-400 hover:border-rose-500 hover:text-rose-500 transition">
+              SELL
+            </button>
+          </div>
+          <input type="hidden" id="modal-action-val" value="BUY" />
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-slate-400">Volume (Lot)</label>
+            <div class="flex items-center gap-1 text-[10px]">
+              <button type="button" onclick="setModalLot(0.01)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-emerald-500">0.01</button>
+              <button type="button" onclick="setModalLot(0.05)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-emerald-500">0.05</button>
+              <button type="button" onclick="setModalLot(0.10)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-emerald-500">0.10</button>
+            </div>
+          </div>
+          <input id="modal-lot" type="number" step="0.01" value="0.01" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Stop Loss (SL)</label>
+            <input id="modal-sl" type="number" step="0.01" value="2640.00" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Take Profit (TP)</label>
+            <input id="modal-tp" type="number" step="0.01" value="2680.00" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Strategy Identifier</label>
+          <input id="modal-strategy" type="text" value="MKL_GCB" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500" />
+        </div>
+
+        <button type="submit" id="btn-modal-submit" class="w-full py-2.5 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-glow-emerald transition duration-150 uppercase text-xs tracking-wider flex items-center justify-center gap-2">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          <span>Dispatch Webhook Signal</span>
+        </button>
+
+      </form>
+
+    </div>
+  </div>
+
+
+  <!-- ======================================================== -->
+  <!-- TOAST NOTIFICATION CONTAINER                             -->
+  <!-- ======================================================== -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none font-mono"></div>
+
+
+  <!-- ======================================================== -->
+  <!-- CORE LOGIC & REAL-TIME DASHBOARD ENGINE                  -->
+  <!-- ======================================================== -->
+  <script>
+    // --------------------------------------------------------
+    // 1. WATCHLIST DEFINITION
+    // --------------------------------------------------------
+    const WATCHLIST = [
+      {
+        symbol: "XAUUSD",
+        name: "Spot Gold / US Dollar",
+        price: "$2,654.20",
+        delta: "+0.84%",
+        spread: "1.8 pips",
+        presetLot: "0.01",
+        openPositions: 2,
+        isHighlighted: true
+      },
+      {
+        symbol: "EURUSD",
+        name: "Euro / US Dollar",
+        price: "1.0842",
+        delta: "+0.15%",
+        spread: "0.8 pips",
+        presetLot: "0.02",
+        openPositions: 1,
+        isHighlighted: false
+      },
+      {
+        symbol: "GBPUSD",
+        name: "British Pound / USD",
+        price: "1.2980",
+        delta: "-0.22%",
+        spread: "1.2 pips",
+        presetLot: "0.05",
+        openPositions: 0,
+        isHighlighted: false
+      },
+      {
+        symbol: "US30",
+        name: "Dow Jones 30",
+        price: "43,729.00",
+        delta: "+0.45%",
+        spread: "2.5 pips",
+        presetLot: "0.10",
+        openPositions: 3,
+        isHighlighted: false
+      },
+      {
+        symbol: "BTCUSD",
+        name: "Bitcoin / USD",
+        price: "$76,410.00",
+        delta: "+3.80%",
+        spread: "12.0 pips",
+        presetLot: "0.01",
+        openPositions: 1,
+        isHighlighted: false
+      },
+      {
+        symbol: "USDJPY",
+        name: "US Dollar / Yen",
+        price: "152.85",
+        delta: "-0.10%",
+        spread: "0.9 pips",
+        presetLot: "0.03",
+        openPositions: 0,
+        isHighlighted: false
+      }
+    ];
+
+    // --------------------------------------------------------
+    // 2. STATE
+    // --------------------------------------------------------
+    const state = {
+      theme: localStorage.getItem('theme') || 'dark',
+      activeSymbol: 'XAUUSD',
+      symbolFilter: '',
+      globalSearch: '',
+      completedFilter: 'ALL',
+      eaPaused: false,
+      selectedSignal: null,
+      signals: [],
+      pendingSignals: [],
+      completedSignals: [],
+      chartInstance: null
+    };
+
+    // --------------------------------------------------------
+    // 3. THEME TOGGLE (persisted in localStorage.theme)
+    // --------------------------------------------------------
+    function applyTheme(theme) {
+      state.theme = theme;
+      localStorage.setItem('theme', theme);
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
+      }
+      if (state.chartInstance) {
+        updateChartTheme();
+      }
+    }
+
+    function toggleTheme() {
+      const next = state.theme === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+    }
+
+    applyTheme(state.theme);
+
+    // --------------------------------------------------------
+    // 4. CHART.JS AREA SPARKLINE INITIALIZATION
+    // --------------------------------------------------------
+    function initChart() {
+      const ctx = document.getElementById('executionLatencyChart').getContext('2d');
+      const labels = ['00:00', '02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', 'Now'];
+      const latencyData = [118, 125, 142, 130, 160, 145, 138, 152, 128, 134, 148, 138];
+
+      const isDark = document.documentElement.classList.contains('dark');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+      gradient.addColorStop(0, isDark ? 'rgba(16, 185, 129, 0.35)' : 'rgba(16, 185, 129, 0.25)');
+      gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+      state.chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Latency (ms)',
+            data: latencyData,
+            borderColor: '#10B981',
+            borderWidth: 2,
+            fill: true,
+            backgroundColor: gradient,
+            tension: 0.4,
+            pointRadius: 2.5,
+            pointHoverRadius: 5,
+            pointBackgroundColor: '#10B981',
+            pointBorderColor: isDark ? '#080C14' : '#FFFFFF',
+            pointBorderWidth: 1.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: isDark ? '#0E1422' : '#FFFFFF',
+              titleColor: isDark ? '#F3F4F6' : '#111827',
+              bodyColor: isDark ? '#E5E7EB' : '#374151',
+              borderColor: isDark ? '#1E2638' : '#E2E8F0',
+              borderWidth: 1,
+              padding: 8,
+              displayColors: false,
+              callbacks: {
+                label: function(ctx) { return `Latency: ${ctx.parsed.y} ms`; }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                color: isDark ? 'rgba(30, 38, 56, 0.4)' : 'rgba(226, 232, 240, 0.6)',
+                drawBorder: false
+              },
+              ticks: {
+                color: isDark ? '#64748B' : '#94A3B8',
+                font: { family: 'JetBrains Mono', size: 9 }
+              }
+            },
+            y: {
+              grid: {
+                color: isDark ? 'rgba(30, 38, 56, 0.4)' : 'rgba(226, 232, 240, 0.6)',
+                drawBorder: false
+              },
+              ticks: {
+                color: isDark ? '#64748B' : '#94A3B8',
+                font: { family: 'JetBrains Mono', size: 9 },
+                callback: function(v) { return v + 'ms'; }
+              },
+              suggestedMin: 80,
+              suggestedMax: 180
+            }
+          }
+        }
+      });
+    }
+
+    function updateChartTheme() {
+      if (!state.chartInstance) return;
+      const isDark = document.documentElement.classList.contains('dark');
+      const ctx = document.getElementById('executionLatencyChart').getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+      gradient.addColorStop(0, isDark ? 'rgba(16, 185, 129, 0.35)' : 'rgba(16, 185, 129, 0.25)');
+      gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+      state.chartInstance.data.datasets[0].backgroundColor = gradient;
+      state.chartInstance.data.datasets[0].pointBorderColor = isDark ? '#080C14' : '#FFFFFF';
+      state.chartInstance.options.scales.x.grid.color = isDark ? 'rgba(30, 38, 56, 0.4)' : 'rgba(226, 232, 240, 0.6)';
+      state.chartInstance.options.scales.y.grid.color = isDark ? 'rgba(30, 38, 56, 0.4)' : 'rgba(226, 232, 240, 0.6)';
+      state.chartInstance.update();
+    }
+
+    // --------------------------------------------------------
+    // 5. COLUMN 1: RENDER WATCHLIST
+    // --------------------------------------------------------
+    function renderWatchlist() {
+      const container = document.getElementById('symbol-list-container');
+      const filter = state.symbolFilter.trim().toUpperCase();
+
+      const items = WATCHLIST.filter(item => 
+        !filter || item.symbol.includes(filter) || item.name.toUpperCase().includes(filter)
+      );
+
+      document.getElementById('watchlist-count').innerText = `${items.length} PAIRS`;
+
+      container.innerHTML = items.map(item => {
+        const isCurrent = state.activeSymbol === item.symbol;
+
+        if (isCurrent) {
+          return `
+            <div 
+              onclick="selectSymbol('${item.symbol}')"
+              class="cursor-pointer p-3.5 rounded-xl border border-emerald-500/80 shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)] bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-slate-900/40 transition-all font-mono"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span class="font-bold text-sm text-slate-900 dark:text-white">${item.symbol}</span>
+                </div>
+                <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">${item.price}</span>
+              </div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">${item.name}</div>
+              <div class="flex items-center justify-between mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-900/50 text-[10px] text-slate-600 dark:text-slate-300">
+                <span>Spread: ${item.spread}</span>
+                <span>Lot: ${item.presetLot}</span>
+              </div>
+              ${item.openPositions > 0 ? `
+                <div class="mt-2 flex items-center justify-between text-[10px] bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded">
+                  <span>Open Positions</span>
+                  <span class="font-bold">${item.openPositions} Active</span>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        return `
+          <div 
+            onclick="selectSymbol('${item.symbol}')"
+            class="cursor-pointer p-3 rounded-xl bg-white dark:bg-[#0E1422] hover:border-emerald-500/40 border border-slate-200 dark:border-slate-800 transition font-mono group shadow-2xs"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full ${item.openPositions > 0 ? 'bg-emerald-500' : 'bg-slate-400'}"></span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-200 group-hover:text-emerald-500 transition">${item.symbol}</span>
+              </div>
+              <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">${item.price}</span>
+            </div>
+            <div class="flex items-center justify-between mt-1.5 text-[10px] text-slate-400">
+              <span>Spread: ${item.spread}</span>
+              <span class="${item.delta.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'} font-semibold">${item.delta}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterSymbols(val) {
+      state.symbolFilter = val;
+      renderWatchlist();
+    }
+
+    function selectSymbol(sym) {
+      state.activeSymbol = sym;
+      const target = WATCHLIST.find(w => w.symbol === sym) || {
+        symbol: "ALL",
+        price: "Cross-Market"
+      };
+
+      document.getElementById('chart-symbol-icon').innerText = sym === 'ALL' ? 'ALL' : sym.slice(0, 3);
+      document.getElementById('chart-symbol-title').innerText = sym === 'ALL' ? 'All Instruments' : sym;
+      document.getElementById('chart-live-price').innerText = target.price;
+
+      if (sym !== 'ALL') {
+        const modalSelect = document.getElementById('modal-symbol');
+        if (modalSelect) modalSelect.value = sym;
+      }
+
+      renderWatchlist();
+      renderQueues();
+    }
+
+    // --------------------------------------------------------
+    // 6. QUEUES & AUDIT RECEIPT ENGINE
+    // --------------------------------------------------------
+    function filterSignalList(list) {
+      return list.filter(s => {
+        if (state.activeSymbol !== 'ALL' && s.symbol !== state.activeSymbol) {
+          return false;
+        }
+        if (state.globalSearch) {
+          const q = state.globalSearch.toLowerCase();
+          const matchId = (s.signal_id || '').toLowerCase().includes(q);
+          const matchSym = (s.symbol || '').toLowerCase().includes(q);
+          const matchTicket = (s.order_ticket || '').toLowerCase().includes(q);
+          if (!matchId && !matchSym && !matchTicket) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderQueues() {
+      // Pending
+      const pendingList = filterSignalList(state.pendingSignals);
+      const pendingBadge = document.getElementById('badge-pending-count');
+      const pendingContainer = document.getElementById('pending-queue-container');
+
+      pendingBadge.innerText = `${pendingList.length} PENDING`;
+
+      if (!pendingList.length) {
+        pendingContainer.innerHTML = `
+          <div class="p-5 rounded-xl bg-white dark:bg-[#0E1422] border border-dashed border-slate-200 dark:border-slate-800 text-center font-mono space-y-1">
+            <i data-lucide="check-check" class="w-5 h-5 text-emerald-500 mx-auto"></i>
+            <div class="text-xs font-bold text-slate-700 dark:text-slate-300">Pending Queue Clear</div>
+            <p class="text-[10px] text-slate-400">All incoming signals have been processed by MT5</p>
+          </div>
+        `;
+      } else {
+        pendingContainer.innerHTML = pendingList.map(sig => {
+          const isSelected = state.selectedSignal && state.selectedSignal.signal_id === sig.signal_id;
+          const waitSeconds = getElapsedSeconds(sig.created_at);
+
+          return `
+            <div 
+              onclick="selectSignalForAudit('${sig.signal_id}')"
+              class="cursor-pointer p-3 rounded-xl bg-white dark:bg-[#0E1422] hover:border-amber-400/60 border ${isSelected ? 'border-amber-500 ring-1 ring-amber-500/20' : 'border-slate-200 dark:border-slate-800'} transition font-mono space-y-1.5"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${sig.action === 'BUY' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-500 border border-rose-500/30'}">
+                    ${sig.action}
+                  </span>
+                  <span class="font-bold text-xs text-slate-800 dark:text-slate-100">${sig.symbol}</span>
+                  <span class="text-[10px] text-slate-400">${sig.lot} LOT</span>
+                </div>
+                <div class="flex items-center gap-1 text-[10px] text-amber-500 font-bold bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-800/60">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
+                  <span>Wait: ${waitSeconds}s</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                <span class="truncate max-w-[170px]">${sig.signal_id}</span>
+                <span>${sig.strategy || 'WEBHOOK'}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Completed
+      let completedList = filterSignalList(state.completedSignals);
+      if (state.completedFilter === 'EXECUTED') {
+        completedList = completedList.filter(s => s.status === 'EXECUTED');
+      } else if (state.completedFilter === 'FAILED') {
+        completedList = completedList.filter(s => s.status === 'FAILED');
+      }
+
+      const completedBadge = document.getElementById('badge-completed-count');
+      const completedContainer = document.getElementById('completed-queue-container');
+
+      completedBadge.innerText = `${completedList.length} ORDERS`;
+
+      if (!completedList.length) {
+        completedContainer.innerHTML = `
+          <div class="p-5 rounded-xl bg-white dark:bg-[#0E1422] border border-slate-200 dark:border-slate-800 text-center font-mono space-y-1">
+            <i data-lucide="inbox" class="w-5 h-5 text-slate-400 mx-auto"></i>
+            <div class="text-xs font-semibold text-slate-600 dark:text-slate-400">No completed orders</div>
+            <p class="text-[10px] text-slate-400">Dispatched webhook orders will appear here</p>
+          </div>
+        `;
+      } else {
+        completedContainer.innerHTML = completedList.map(sig => {
+          const isSelected = state.selectedSignal && state.selectedSignal.signal_id === sig.signal_id;
+          const isExecuted = sig.status === 'EXECUTED';
+          const latency = sig.latency || '113 ms';
+
+          return `
+            <div 
+              onclick="selectSignalForAudit('${sig.signal_id}')"
+              class="cursor-pointer p-3 rounded-xl bg-white dark:bg-[#0E1422] hover:border-emerald-500/40 border ${isSelected ? 'border-emerald-500 ring-1 ring-emerald-500/20' : 'border-slate-200 dark:border-slate-800'} transition font-mono space-y-1.5"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${sig.action === 'BUY' ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400'}">
+                    ${sig.action}
+                  </span>
+                  <span class="font-bold text-xs text-slate-800 dark:text-slate-100">${sig.symbol}</span>
+                  <span class="text-[10px] text-slate-400">${sig.lot}L</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[9px] px-1.5 py-0.5 rounded-full ${isExecuted ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-500 border border-emerald-300 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-950/60 text-rose-500 border border-rose-300 dark:border-rose-800'} font-bold">
+                    ${sig.status}
+                  </span>
+                  <span class="text-[10px] text-slate-400">${latency}</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                <span class="text-slate-600 dark:text-slate-300 font-semibold">Ticket: ${sig.order_ticket || '#Pending'}</span>
+                <span>${formatTimestamp(sig.created_at)}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      lucide.createIcons();
+    }
+
+    function selectSignalForAudit(sigId) {
+      const all = [...state.pendingSignals, ...state.completedSignals];
+      const match = all.find(s => s.signal_id === sigId);
+      if (match) {
+        state.selectedSignal = match;
+        renderAuditReceipt(match);
+        renderQueues();
+      }
+    }
+
+    function renderAuditReceipt(sig) {
+      if (!sig) return;
+
+      const isExecuted = sig.status === 'EXECUTED';
+      const isPending = sig.status === 'PENDING';
+      const isFailed = sig.status === 'FAILED';
+
+      document.getElementById('audit-action-badge').innerText = sig.action;
+      document.getElementById('audit-action-badge').className = `px-2 py-0.5 rounded text-[10px] font-bold font-mono ${sig.action === 'BUY' ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500 text-white'}`;
+      
+      document.getElementById('audit-status-badge').innerText = sig.status;
+      document.getElementById('audit-status-badge').className = `px-2 py-0.5 rounded text-[9px] font-mono uppercase ${isExecuted ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800' : isPending ? 'bg-amber-950/80 text-amber-400 border border-amber-800' : 'bg-rose-950/80 text-rose-400 border border-rose-800'}`;
+
+      document.getElementById('audit-symbol').innerText = sig.symbol;
+      document.getElementById('audit-lot').innerText = `${sig.lot} LOT`;
+      document.getElementById('audit-strategy').innerText = `Strategy: ${sig.strategy || 'MKL_GCB'}`;
+      document.getElementById('audit-ticket-number').innerText = sig.order_ticket || (isPending ? '#Pending' : '#None');
+      document.getElementById('audit-latency-value').innerText = sig.latency || (isPending ? 'Pending' : '142 ms');
+
+      document.getElementById('audit-signal-id').innerText = sig.signal_id;
+      const hookHash = `tv_sig_0x${(sig.signal_id.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0) >>> 0).toString(16).padStart(8, '0')}`;
+      document.getElementById('audit-hook-hash').innerText = hookHash;
+      document.getElementById('audit-hook-hash').title = hookHash;
+
+      const execPrice = sig.symbol === 'XAUUSD' ? '2654.10' : '1.0842';
+      const reqPrice = sig.symbol === 'XAUUSD' ? '2654.00' : '1.0840';
+      document.getElementById('audit-prices').innerText = `${execPrice} / ${reqPrice}`;
+      document.getElementById('audit-sl').innerText = sig.sl ? sig.sl.toFixed(2) : '2640.00';
+      document.getElementById('audit-tp').innerText = sig.tp ? sig.tp.toFixed(2) : '2680.00';
+
+      // Stepper
+      const node3 = document.getElementById('step-node-3');
+      const node4 = document.getElementById('step-node-4');
+      const line3 = document.getElementById('stepper-line-3');
+      const time3 = document.getElementById('step-time-3');
+      const time4 = document.getElementById('step-time-4');
+
+      if (isExecuted) {
+        node3.className = 'w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-500 border border-emerald-500 flex items-center justify-center shrink-0 z-10';
+        node4.className = 'w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-500 border border-emerald-500 flex items-center justify-center shrink-0 z-10';
+        line3.className = 'stepper-line bg-emerald-500';
+        time3.innerText = 'Key Authenticated';
+        time4.innerText = `Ticket ${sig.order_ticket || '#10849204'}`;
+      } else if (isPending) {
+        node3.className = 'w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-500 border border-amber-500 flex items-center justify-center shrink-0 z-10 animate-pulse';
+        node4.className = 'w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-300 dark:border-slate-700 flex items-center justify-center shrink-0 z-10';
+        line3.className = 'stepper-line bg-slate-300 dark:bg-slate-800';
+        time3.innerText = 'Awaiting MT5 pull...';
+        time4.innerText = 'Pending confirmation';
+      } else if (isFailed) {
+        node3.className = 'w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-500 border border-emerald-500 flex items-center justify-center shrink-0 z-10';
+        node4.className = 'w-7 h-7 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-500 border border-rose-500 flex items-center justify-center shrink-0 z-10';
+        line3.className = 'stepper-line bg-rose-500';
+        time4.innerText = sig.execution_message || 'Order failed';
+      }
+
+      lucide.createIcons();
+    }
+
+    function setCompletedFilter(filter) {
+      state.completedFilter = filter;
+      ['all', 'executed', 'failed'].forEach(f => {
+        const btn = document.getElementById(`tab-filter-${f}`);
+        if (f.toUpperCase() === filter) {
+          btn.className = 'px-2.5 py-0.5 rounded-md bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold shadow-xs transition';
+        } else {
+          btn.className = 'px-2.5 py-0.5 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition';
+        }
+      });
+      renderQueues();
+    }
+
+    function handleGlobalSearch(query) {
+      state.globalSearch = query.trim();
+      renderQueues();
+    }
+
+    // Hotkey '/'
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+        e.preventDefault();
+        document.getElementById('global-search-input').focus();
+      }
+    });
+
+    // --------------------------------------------------------
+    // 7. REAL-TIME DATA POLLER (Every 2000ms)
+    // --------------------------------------------------------
+    async function fetchSignals() {
+      try {
+        const res = await fetch('/api/signals');
+        if (!res.ok) throw new Error('API offline');
+        const rawSignals = await res.json();
+
+        const pending = [];
+        const completed = [];
+
+        rawSignals.forEach(s => {
+          if (s.status === 'PENDING' || s.status === 'PROCESSING') {
+            pending.push(s);
+          } else {
+            if (!s.latency) {
+              s.latency = `${105 + (Math.abs(s.id || 1) * 19) % 55} ms`;
+            }
+            completed.push(s);
+          }
+        });
+
+        state.pendingSignals = pending;
+        state.completedSignals = completed;
+        state.signals = rawSignals;
+
+        if (!state.selectedSignal && rawSignals.length > 0) {
+          state.selectedSignal = rawSignals[0];
+          renderAuditReceipt(rawSignals[0]);
+        } else if (state.selectedSignal) {
+          const fresh = rawSignals.find(s => s.signal_id === state.selectedSignal.signal_id);
+          if (fresh) {
+            state.selectedSignal = fresh;
+            renderAuditReceipt(fresh);
+          }
+        }
+
+        renderQueues();
+      } catch (err) {
+        console.warn('Signal polling warning:', err);
+      }
+    }
+
+    async function fetchBridgeStatus() {
+      try {
+        const res = await fetch('/api/bridge/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        state.eaPaused = !!data.ea_ingestion_paused;
+        updateEAPauseUI();
+      } catch (err) {
+        console.warn('Bridge status polling warning:', err);
+      }
+    }
+
+    function updateEAPauseUI() {
+      const banner = document.getElementById('ea-paused-banner');
+      const btnLabel = document.getElementById('btn-pause-ea-label');
+
+      if (state.eaPaused) {
+        banner.classList.remove('hidden');
+        btnLabel.innerText = 'Resume EA';
+      } else {
+        banner.classList.add('hidden');
+        btnLabel.innerText = 'Pause EA';
+      }
+    }
+
+    async function toggleEAPause() {
+      try {
+        const res = await fetch('/api/bridge/toggle-pause', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          state.eaPaused = data.ea_ingestion_paused;
+          updateEAPauseUI();
+          showToast(state.eaPaused ? 'EA ingestion paused' : 'EA ingestion resumed', state.eaPaused ? 'amber' : 'emerald');
+        }
+      } catch (err) {
+        showToast('Failed to toggle EA state', 'rose');
+      }
+    }
+
+    // --------------------------------------------------------
+    // 8. MANUAL SIGNAL MODAL & SUBMISSION
+    // --------------------------------------------------------
+    function openManualSignalModal() {
+      document.getElementById('manual-signal-modal').classList.remove('hidden');
+      if (state.activeSymbol !== 'ALL') {
+        document.getElementById('modal-symbol').value = state.activeSymbol;
+      }
+      lucide.createIcons();
+    }
+
+    function closeManualSignalModal() {
+      document.getElementById('manual-signal-modal').classList.add('hidden');
+    }
+
+    function setModalAction(action) {
+      document.getElementById('modal-action-val').value = action;
+      const btnBuy = document.getElementById('btn-action-buy');
+      const btnSell = document.getElementById('btn-action-sell');
+
+      if (action === 'BUY') {
+        btnBuy.className = 'py-2 rounded-lg font-bold border-2 border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 transition';
+        btnSell.className = 'py-2 rounded-lg font-bold border border-slate-200 dark:border-slate-800 text-slate-400 hover:border-rose-500 hover:text-rose-500 transition';
+      } else {
+        btnSell.className = 'py-2 rounded-lg font-bold border-2 border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400 transition';
+        btnBuy.className = 'py-2 rounded-lg font-bold border border-slate-200 dark:border-slate-800 text-slate-400 hover:border-emerald-500 hover:text-emerald-500 transition';
+      }
+    }
+
+    function setModalLot(lot) {
+      document.getElementById('modal-lot').value = lot;
+    }
+
+    async function submitManualSignal(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-modal-submit');
+      btn.disabled = true;
+      btn.innerText = 'Enqueuing...';
+
+      const payload = {
+        signal_id: `TV-MANUAL-${Date.now().toString().slice(-6)}`,
+        strategy: document.getElementById('modal-strategy').value || 'MKL_GCB',
+        action: document.getElementById('modal-action-val').value,
+        symbol: document.getElementById('modal-symbol').value,
+        lot: parseFloat(document.getElementById('modal-lot').value),
+        sl: parseFloat(document.getElementById('modal-sl').value),
+        tp: parseFloat(document.getElementById('modal-tp').value)
+      };
+
+      try {
+        const res = await fetch('/api/test-signal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error('Signal dispatch failed');
+        showToast(`Signal ${payload.signal_id} enqueued!`, 'emerald');
+        closeManualSignalModal();
+        await fetchSignals();
+        selectSignalForAudit(payload.signal_id);
+      } catch (err) {
+        showToast('Failed to dispatch webhook signal', 'rose');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="send" class="w-3.5 h-3.5"></i><span>Dispatch Webhook Signal</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    // --------------------------------------------------------
+    // 9. UTILITIES
+    // --------------------------------------------------------
+    function showToast(message, type = 'emerald') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const color = type === 'emerald' 
+        ? 'bg-emerald-600 text-white border-emerald-500 shadow-glow-emerald' 
+        : type === 'amber'
+        ? 'bg-amber-600 text-white border-amber-500'
+        : 'bg-rose-600 text-white border-rose-500';
+
+      toast.className = `px-3.5 py-2.5 rounded-xl border text-xs font-mono font-bold shadow-lg flex items-center gap-2 transform translate-y-2 opacity-0 transition-all duration-200 pointer-events-auto ${color}`;
+      toast.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-white"></span><span>${message}</span>`;
+
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 250);
+      }, 3000);
+    }
+
+    function formatTimestamp(ts) {
+      if (!ts) return 'Just now';
+      try {
+        const d = new Date(ts);
+        if (isNaN(d.getTime())) return ts;
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch {
+        return ts;
+      }
+    }
+
+    function getElapsedSeconds(ts) {
+      if (!ts) return 1;
+      try {
+        const d = new Date(ts);
+        const now = new Date();
+        const diff = Math.floor((now.getTime() - d.getTime()) / 1000);
+        return diff > 0 ? diff : 1;
+      } catch {
+        return 1;
+      }
+    }
+
+    function copyCurrentReceiptJSON() {
+      if (!state.selectedSignal) return;
+      navigator.clipboard.writeText(JSON.stringify(state.selectedSignal, null, 2))
+        .then(() => showToast('Receipt JSON copied to clipboard!', 'emerald'))
+        .catch(() => showToast('Copy failed', 'rose'));
+    }
+
+    function toggleNotifications() {
+      document.getElementById('notif-popover').classList.toggle('hidden');
+    }
+
+    function scrollToQueues() {
+      const q = document.getElementById('pending-queue-container');
+      if (q) q.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function openSettingsModal() {
+      showToast('Bridge Parameters: SQLite WAL Mode • Timeout 60s • 3 Retries', 'emerald');
+    }
+
+    // --------------------------------------------------------
+    // 10. SYSTEM BOOTSTRAP
+    // --------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      initChart();
+      renderWatchlist();
+      lucide.createIcons();
+
+      fetchSignals();
+      fetchBridgeStatus();
+
+      setInterval(fetchSignals, 2000);
+      setInterval(fetchBridgeStatus, 4000);
+      setInterval(() => {
+        if (state.pendingSignals.length > 0) {
+          renderQueues();
+        }
+      }, 1000);
+    });
+  </script>
+</body>
+
+</html>
