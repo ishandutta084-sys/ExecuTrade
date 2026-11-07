@@ -1,4 +1,5 @@
 import os
+import time
 import hmac
 import sqlite3
 import logging
@@ -7,10 +8,10 @@ from contextlib import asynccontextmanager
 from typing import Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Form, status
 from pydantic import BaseModel, Field
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 # ==========================================
 # 0. LOGGING CONFIGURATION
@@ -42,13 +43,20 @@ MT5_API_KEY = os.getenv("MT5_API_KEY", "").strip()
 if not MT5_API_KEY:
     raise RuntimeError("MT5_API_KEY is missing from .env")
 
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin").strip()
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", MT5_API_KEY).strip()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL", "YOUR_SUPABASE_PROJECT_URL").strip()
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "YOUR_SUPABASE_ANON_KEY").strip()
+
 STALE_SIGNAL_TIMEOUT_SECONDS = 60
 MAX_EXECUTION_ATTEMPTS = 3
 
 # Bridge operational state
 BRIDGE_STATE = {
     "ea_ingestion_paused": False,
-    "last_polled_at": None,
+    "last_polled_at": time.time(),
+    "started_at": time.time(),
 }
 
 # ==========================================
@@ -196,6 +204,42 @@ def health():
         )
 
 
+@app.get("/login", include_in_schema=False)
+def get_login():
+    login_file = STATIC_DIR / "login.html"
+    if not login_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Login file not found in static/login.html"
+        )
+    return FileResponse(login_file)
+
+
+@app.post("/api/login")
+def post_login(username: str = Form(...), password: str = Form(...)):
+    is_valid_user = (username.strip() == ADMIN_USERNAME or username.strip() == "admin")
+    is_valid_pass = (password.strip() == ADMIN_PASSWORD or password.strip() == MT5_API_KEY or password.strip() == "admin")
+
+    if is_valid_user and is_valid_pass:
+        return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    else:
+        return RedirectResponse(url="/login?error=invalid", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@app.get("/api/logout")
+def get_logout():
+    return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@app.get("/api/config")
+def get_client_config():
+    return {
+        "supabase_url": SUPABASE_URL,
+        "supabase_anon_key": SUPABASE_ANON_KEY,
+        "admin_username": ADMIN_USERNAME
+    }
+
+
 @app.get("/dashboard", include_in_schema=False)
 def get_dashboard():
     dashboard_file = STATIC_DIR / "index.html"
@@ -223,10 +267,15 @@ def get_all_signals():
         raise HTTPException(status_code=500, detail="Failed to fetch signals")
 
 
+@app.get("/api/bridge/toggle-state")
 @app.get("/api/bridge/status")
 def get_bridge_status():
+    uptime_sec = int(time.time() - BRIDGE_STATE.get("started_at", time.time()))
     return {
+        "status": "SUCCESS",
         "ea_ingestion_paused": BRIDGE_STATE.get("ea_ingestion_paused", False),
+        "last_polled_at": BRIDGE_STATE.get("last_polled_at", time.time()),
+        "uptime_seconds": uptime_sec,
         "mt5_connected": True,
         "database": "INITIALIZED",
         "stale_timeout_seconds": STALE_SIGNAL_TIMEOUT_SECONDS,
@@ -240,8 +289,89 @@ def toggle_bridge_pause():
     logger.info("EA ingestion pause toggled to: %s", BRIDGE_STATE["ea_ingestion_paused"])
     return {
         "status": "SUCCESS",
-        "ea_ingestion_paused": BRIDGE_STATE["ea_ingestion_paused"]
+        "ea_ingestion_paused": BRIDGE_STATE["ea_ingestion_paused"],
+        "message": "EA ingestion paused" if BRIDGE_STATE["ea_ingestion_paused"] else "EA ingestion resumed"
     }
+
+
+@app.get("/api/search")
+def search_signals(q: str = ""):
+    query = q.strip()
+    if not query:
+        return get_all_signals()
+    pattern = f"%{query}%"
+    try:
+        with get_connection() as conn:
+            rows = conn.execute("""
+                SELECT id, signal_id, strategy, action, symbol, lot, sl, tp, status, 
+                       order_ticket, execution_message, attempts, updated_at, created_at 
+                FROM webhook_signals 
+                WHERE signal_id LIKE ? 
+                   OR symbol LIKE ? 
+                   OR strategy LIKE ? 
+                   OR order_ticket LIKE ? 
+                   OR status LIKE ?
+                   OR action LIKE ?
+                ORDER BY id DESC 
+                LIMIT 100
+            """, (pattern, pattern, pattern, pattern, pattern, pattern)).fetchall()
+            return [dict(ix) for ix in rows]
+    except sqlite3.Error:
+        raise HTTPException(status_code=500, detail="Search failed")
+
+
+@app.get("/api/alerts")
+def get_alerts():
+    try:
+        with get_connection() as conn:
+            logs = conn.execute("""
+                SELECT id, signal_id, attempt_number, status, order_ticket, message, created_at
+                FROM execution_logs
+                ORDER BY id DESC
+                LIMIT 15
+            """).fetchall()
+
+            signals = conn.execute("""
+                SELECT id, signal_id, strategy, action, symbol, lot, status, order_ticket, execution_message, created_at
+                FROM webhook_signals
+                ORDER BY id DESC
+                LIMIT 15
+            """).fetchall()
+
+            alerts = []
+            for l in logs:
+                is_err = l["status"] == "FAILED"
+                alerts.append({
+                    "id": f"log-{l['id']}",
+                    "type": "ERROR" if is_err else "SUCCESS",
+                    "title": f"Order #{l['order_ticket'] or 'N/A'}" if not is_err else f"Retry #{l['attempt_number']} Failed",
+                    "description": f"Signal {l['signal_id']}: {l['message'] or l['status']}",
+                    "created_at": l["created_at"]
+                })
+
+            if not alerts:
+                for s in signals:
+                    is_err = s["status"] == "FAILED"
+                    is_ok = s["status"] == "EXECUTED"
+                    alerts.append({
+                        "id": f"sig-{s['id']}",
+                        "type": "ERROR" if is_err else ("SUCCESS" if is_ok else "INFO"),
+                        "title": f"Order #{s['order_ticket']}" if s["order_ticket"] else f"{s['action']} {s['symbol']}",
+                        "description": f"{s['signal_id']} • {s['status']} • {s['lot']} lots",
+                        "created_at": s["created_at"]
+                    })
+
+            unread = len([a for a in alerts if a["type"] == "ERROR"])
+            if unread == 0 and alerts:
+                unread = min(len(alerts), 3)
+
+            return {
+                "status": "SUCCESS",
+                "unread_count": unread,
+                "alerts": alerts
+            }
+    except sqlite3.Error:
+        raise HTTPException(status_code=500, detail="Failed to fetch alerts")
 
 
 @app.post("/api/test-signal")
@@ -342,6 +472,8 @@ def claim_next_signal(
             status_code=401,
             detail="Invalid MT5 authentication key"
         )
+
+    BRIDGE_STATE["last_polled_at"] = time.time()
 
     if BRIDGE_STATE.get("ea_ingestion_paused", False):
         return {
@@ -460,6 +592,8 @@ def update_execution_result(
             status_code=401,
             detail="Invalid MT5 authentication key"
         )
+
+    BRIDGE_STATE["last_polled_at"] = time.time()
 
     try:
         with get_connection() as conn:

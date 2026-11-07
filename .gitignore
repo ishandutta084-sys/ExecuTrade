@@ -1,6 +1,8 @@
 .env
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 *.sqlite3
 __pycache__/
 *.py[cod]
@@ -8,3 +10,6 @@ __pycache__/
 venv/
 env/
 *.ex5
+node_modules/
+dist/
+.DS_Store
