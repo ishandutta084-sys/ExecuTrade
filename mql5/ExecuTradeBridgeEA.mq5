@@ -30,8 +30,8 @@ CPositionInfo  g_position;
 CSymbolInfo    g_symInfo;
 
 int            g_socket          = INVALID_HANDLE;
-datetime       g_lastHeartbeat   = 0;
-datetime       g_lastAccountSync = 0;
+ulong          g_lastHeartbeat   = 0;
+ulong          g_lastAccountSync = 0;
 string         g_rxBuffer        = "";
 bool           g_isConnected     = false;
 
@@ -40,17 +40,23 @@ bool           g_isConnected     = false;
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   Print("ExecuTrade Bridge EA initializing...");
+   Print("[ExecuTrade] Bridge EA initializing...");
 
    // Initialize CTrade helper
    g_trade.SetExpertMagicNumber(InpDefaultMagic);
    g_trade.SetDeviationInPoints(InpMaxDeviation);
    g_trade.SetTypeFilling(ORDER_FILLING_IOC); // Default to IOC, dynamic per symbol
 
+   // Check if Algo Trading is allowed by user/terminal
+   if(!MQLInfoInteger(MQL_TRADE_ALLOWED))
+   {
+      Print("[ExecuTrade] WARNING: Algo Trading is DISABLED in MT5 toolbar. Please click the 'Algo Trading' button.");
+   }
+
    // Enable 10ms High-Frequency Millisecond Timer (100 ticks per second)
    if(!EventSetMillisecondTimer(10))
    {
-      Print("Error: Failed to set millisecond timer!");
+      Print("[ExecuTrade] Error: Failed to set millisecond timer!");
       return(INIT_FAILED);
    }
 
@@ -67,7 +73,8 @@ void OnDeinit(const int reason)
 {
    EventKillTimer();
    CloseSocketConnection();
-   Print("ExecuTrade Bridge EA deinitialized.");
+   Comment("");
+   Print("[ExecuTrade] Bridge EA deinitialized.");
 }
 
 //+------------------------------------------------------------------+
@@ -75,13 +82,31 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTimer()
 {
-   datetime now = TimeCurrent();
+   ulong now = GetTickCount64();
 
-   // 1. Maintain Socket Connection
+   // Update on-chart telemetry comment every ~500ms
+   static ulong lastCommentUpdate = 0;
+   if(now - lastCommentUpdate >= 500)
+   {
+      lastCommentUpdate = now;
+      Comment(StringFormat("=== ExecuTrade Bridge v2.0 ===\n" +
+                           "Status: %s\n" +
+                           "Node Hub: %s:%d\n" +
+                           "Account: %I64d | Balance: $%.2f | Equity: $%.2f\n" +
+                           "Algo Trading: %s",
+                           g_isConnected ? "CONNECTED (Active)" : "CONNECTING...",
+                           InpHost, InpPort,
+                           AccountInfoInteger(ACCOUNT_LOGIN),
+                           AccountInfoDouble(ACCOUNT_BALANCE),
+                           AccountInfoDouble(ACCOUNT_EQUITY),
+                           MQLInfoInteger(MQL_TRADE_ALLOWED) ? "ENABLED" : "DISABLED (Click 'Algo Trading' in MT5 toolbar)"));
+   }
+
+   // 1. Maintain Socket Connection (Retry every 1,000ms if disconnected)
    if(!g_isConnected || g_socket == INVALID_HANDLE)
    {
-      static datetime lastReconnectAttempt = 0;
-      if(now - lastReconnectAttempt >= 2)
+      static ulong lastReconnectAttempt = 0;
+      if(now - lastReconnectAttempt >= 1000)
       {
          lastReconnectAttempt = now;
          ConnectToNodeServer();
@@ -89,10 +114,10 @@ void OnTimer()
       return;
    }
 
-   // 2. Heartbeat Watchdog: Check if server died or half-open socket
-   if(now - g_lastHeartbeat > 4)
+   // 2. Heartbeat Watchdog: Check if server died or half-open socket (5,000ms timeout)
+   if(now - g_lastHeartbeat > 5000)
    {
-      Print("Warning: No heartbeat from Node.js server for >4s. Forcing reconnect.");
+      Print("[ExecuTrade] Warning: No heartbeat from Node.js server for >5s. Forcing reconnect.");
       CloseSocketConnection();
       return;
    }
@@ -101,7 +126,7 @@ void OnTimer()
    ReadSocketData();
 
    // 4. Periodic Account Sync (Every 1,000ms)
-   if(now - g_lastAccountSync >= 1)
+   if(now - g_lastAccountSync >= 1000)
    {
       g_lastAccountSync = now;
       SendAccountSync();
@@ -118,22 +143,24 @@ bool ConnectToNodeServer()
    g_socket = SocketCreate();
    if(g_socket == INVALID_HANDLE)
    {
-      PrintFormat("SocketCreate failed with error %d", GetLastError());
+      PrintFormat("[ExecuTrade] SocketCreate failed with error %d", GetLastError());
       return false;
    }
 
-   // Connect with 200ms timeout
-   if(!SocketConnect(g_socket, InpHost, InpPort, 200))
+   // Connect with 1000ms timeout for reliable local loopback
+   if(!SocketConnect(g_socket, InpHost, InpPort, 1000))
    {
+      int err = GetLastError();
       SocketClose(g_socket);
       g_socket = INVALID_HANDLE;
+      PrintFormat("[ExecuTrade] SocketConnect to %s:%d failed with error %d. Retrying in 1s...", InpHost, InpPort, err);
       return false;
    }
 
    g_isConnected = true;
-   g_lastHeartbeat = TimeCurrent();
+   g_lastHeartbeat = GetTickCount64();
    g_rxBuffer = "";
-   PrintFormat("Connected to Node.js Server at %s:%d", InpHost, InpPort);
+   PrintFormat("[ExecuTrade] Successfully connected to Node.js Server at %s:%d", InpHost, InpPort);
 
    // Sync MarketWatch Specifications to Node.js Normalizer
    if(InpAutoSyncSpecs)
@@ -255,7 +282,7 @@ void ProcessCommandMessage(const string json)
    // 1. PING Heartbeat Response
    if(action == "PING")
    {
-      g_lastHeartbeat = TimeCurrent();
+      g_lastHeartbeat = GetTickCount64();
       SendSocketMessage("{\"event\":\"PONG\",\"timestamp\":" + IntegerToString(GetTickCount()) + "}");
       return;
    }
