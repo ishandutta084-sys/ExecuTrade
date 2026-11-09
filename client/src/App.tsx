@@ -10,7 +10,6 @@ import { TelemetryMatrix } from './components/telemetry/TelemetryMatrix.js';
 import { EmergencyToolbar } from './components/telemetry/EmergencyToolbar.js';
 import { SignalsLedger } from './components/ledger/SignalsLedger.js';
 import { LivePositionsTable } from './components/ledger/LivePositionsTable.js';
-import { ExecutionReceipt } from './components/audit/ExecutionReceipt.js';
 import { ManualSignalModal } from './components/modals/ManualSignalModal.js';
 import { LoginPage } from './components/auth/LoginPage.js';
 
@@ -99,49 +98,41 @@ export function App() {
           onLogout={handleLogout}
         />
 
-        {/* Scrollable 2-Column Dashboard Body */}
-        <main className="flex-1 p-6 grid grid-cols-12 gap-6 overflow-y-auto">
-          {/* Left / Center Column (col-span-12 lg:col-span-8 space-y-6) */}
-          <div className="col-span-12 lg:col-span-8 space-y-6">
-            {activeTab === 'console' ? (
-              <>
-                {/* Operational Telemetry Matrix */}
-                <TelemetryMatrix status={status} signals={rawSignals} />
+        {/* Scrollable Dashboard Body */}
+        <main className="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto w-full space-y-6">
+          {activeTab === 'console' ? (
+            <>
+              {/* Operational Telemetry Matrix */}
+              <TelemetryMatrix status={status} signals={rawSignals} />
 
-                {/* Action & Emergency Toolbar */}
-                <EmergencyToolbar
-                  isPaused={status.ea_ingestion_paused}
-                  onTogglePause={togglePause}
-                  onOpenManualModal={() => setIsManualModalOpen(true)}
-                  onFlattenAll={flattenAll}
-                />
-
-                {/* Order Execution Stream / Signals Ledger */}
-                <SignalsLedger
-                  signals={signals}
-                  currentFilter={filter}
-                  setFilter={setFilter}
-                  pendingCount={pendingCount}
-                  selectedSignal={selectedSignal}
-                  onSelectSignal={setSelectedSignal}
-                />
-              </>
-            ) : (
-              /* Live MT5 Positions Tab */
-              <LivePositionsTable
-                positions={brokerPositions}
-                onClosePosition={closePosition}
-                balance={balance}
-                equity={equity}
-                freeMargin={freeMargin}
+              {/* Action & Emergency Toolbar */}
+              <EmergencyToolbar
+                isPaused={status.ea_ingestion_paused}
+                onTogglePause={togglePause}
+                onOpenManualModal={() => setIsManualModalOpen(true)}
+                onFlattenAll={flattenAll}
               />
-            )}
-          </div>
 
-          {/* Right Column: Execution Receipt & Lifecycle Audit Drawer (col-span-12 lg:col-span-4) */}
-          <div className="col-span-12 lg:col-span-4 space-y-4">
-            <ExecutionReceipt signal={selectedSignal} />
-          </div>
+              {/* Order Execution Stream / Signals Ledger */}
+              <SignalsLedger
+                signals={signals}
+                currentFilter={filter}
+                setFilter={setFilter}
+                pendingCount={pendingCount}
+                selectedSignal={selectedSignal}
+                onSelectSignal={setSelectedSignal}
+              />
+            </>
+          ) : (
+            /* Live MT5 Positions Tab */
+            <LivePositionsTable
+              positions={brokerPositions}
+              onClosePosition={closePosition}
+              balance={balance}
+              equity={equity}
+              freeMargin={freeMargin}
+            />
+          )}
         </main>
       </div>
 

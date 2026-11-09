@@ -67,7 +67,7 @@ export const SignalCard: React.FC<SignalCardProps> = ({
           <span className="font-bold text-sm text-slate-800 dark:text-slate-100">{signal.symbol}</span>
           <span className="text-xs text-slate-400">{signal.lot} LOT</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
-            {signal.strategy || 'MKL_GCB'}
+            {signal.strategy || 'DEFAULT'}
           </span>
         </div>
 
@@ -91,7 +91,7 @@ export const SignalCard: React.FC<SignalCardProps> = ({
               EXECUTED
             </span>
             <span className="text-[10px] text-slate-400">
-              {signal.latency_ms ? `${signal.latency_ms} ms` : '118 ms'}
+              {signal.latency_ms ? `${signal.latency_ms} ms` : '--'}
             </span>
           </div>
         )}
@@ -120,6 +120,36 @@ export const SignalCard: React.FC<SignalCardProps> = ({
         </div>
         <span>{new Date(signal.created_at).toLocaleTimeString()}</span>
       </div>
+
+      {/* Expandable Real Trade Details */}
+      {isSelected && (
+        <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-lg">
+          <div>
+            <span className="text-[9px] text-slate-400 block uppercase">Price</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              {signal.executed_price ? signal.executed_price : 'Market'}
+            </span>
+          </div>
+          <div>
+            <span className="text-[9px] text-slate-400 block uppercase">SL / TP</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              {signal.sl || 0} / {signal.tp || 0}
+            </span>
+          </div>
+          <div>
+            <span className="text-[9px] text-slate-400 block uppercase">Deal Ticket</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              {signal.deal_ticket || 'N/A'}
+            </span>
+          </div>
+          <div>
+            <span className="text-[9px] text-slate-400 block uppercase">Result</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block" title={signal.execution_message || 'OK'}>
+              {signal.execution_message || 'OK'}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

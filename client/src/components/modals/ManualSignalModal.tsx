@@ -17,9 +17,9 @@ export const ManualSignalModal: React.FC<ManualSignalModalProps> = ({
   const [symbol, setSymbol] = useState(defaultSymbol);
   const [action, setAction] = useState<'BUY' | 'SELL'>('BUY');
   const [lot, setLot] = useState('0.01');
-  const [sl, setSl] = useState('2640.00');
-  const [tp, setTp] = useState('2680.00');
-  const [strategy, setStrategy] = useState('MKL_GCB');
+  const [sl, setSl] = useState('0');
+  const [tp, setTp] = useState('0');
+  const [strategy, setStrategy] = useState('MANUAL');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,7 +68,7 @@ export const ManualSignalModal: React.FC<ManualSignalModalProps> = ({
           <div className="flex items-center gap-2">
             <Send className="w-4 h-4 text-emerald-500" />
             <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              Push Manual Test Signal
+              Manual Order Dispatch
             </h3>
           </div>
           <button
