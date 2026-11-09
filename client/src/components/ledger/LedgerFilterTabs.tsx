@@ -20,23 +20,23 @@ export const LedgerFilterTabs: React.FC<LedgerFilterTabsProps> = ({
   ];
 
   return (
-    <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg text-[10px] font-mono border border-slate-200/60 dark:border-slate-800">
+    <div className="flex items-center gap-4 border-b border-hairline font-sans text-xs select-none">
       {tabs.map(tab => {
         const isActive = currentFilter === tab.id;
         return (
           <button
             key={tab.id}
             onClick={() => setFilter(tab.id)}
-            className={`px-2.5 py-1 rounded-md transition flex items-center gap-1 cursor-pointer ${
+            className={`pb-2 relative font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
               isActive
-                ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold shadow-xs'
-                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-brass'
+                : 'text-secondary hover:text-primary'
             }`}
           >
             <span>{tab.label}</span>
             {tab.id === 'PENDING' && pendingCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500/20 text-amber-500 font-bold">
-                {pendingCount}
+              <span className="font-mono text-tiny text-pending tabular-nums font-semibold">
+                ({pendingCount})
               </span>
             )}
           </button>
@@ -45,4 +45,3 @@ export const LedgerFilterTabs: React.FC<LedgerFilterTabsProps> = ({
     </div>
   );
 };
-

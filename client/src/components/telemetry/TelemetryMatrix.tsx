@@ -1,6 +1,5 @@
 import React from 'react';
 import { StatCard } from './StatCard.js';
-import { Activity, Zap, CheckCircle2, Server, Clock } from 'lucide-react';
 import { BridgeStatus } from '../../types/telemetry.js';
 import { Signal } from '../../types/signal.js';
 
@@ -15,7 +14,7 @@ export const TelemetryMatrix: React.FC<TelemetryMatrixProps> = ({ status, signal
   const pendingSignals = signals.filter(s => s.status === 'PENDING' || s.status === 'PROCESSING');
 
   const fillRatio = signals.length > 0
-    ? `${Math.round((executedSignals.length / (executedSignals.length + failedSignals.length || 1)) * 100)}% Fill`
+    ? `${Math.round((executedSignals.length / (executedSignals.length + failedSignals.length || 1)) * 100)}% fill`
     : '--';
 
   let avgLatencyStr = '-- ms';
@@ -35,74 +34,58 @@ export const TelemetryMatrix: React.FC<TelemetryMatrixProps> = ({ status, signal
   const uptimeStr = `${hours}h ${mins}m`;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="border border-hairline bg-surface rounded-panel grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x-0 lg:divide-x divide-hairline">
       {/* 1. Bridge State */}
       <StatCard
-        title="Bridge State"
+        title="Bridge state"
         mainValue={status.ea_ingestion_paused ? 'PAUSED' : 'RUNNING'}
-        subValue={`Uptime: ${uptimeStr}`}
-        icon={<Activity className="w-4 h-4 text-emerald-500" />}
-        badge={
-          <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-              status.ea_ingestion_paused
-                ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-600 border border-amber-300 dark:border-amber-800'
-                : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 border border-emerald-300 dark:border-emerald-800'
-            }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                status.ea_ingestion_paused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'
-              }`}
-            />
-            {status.ea_ingestion_paused ? 'Paused' : 'Active'}
-          </span>
+        statusDot={status.ea_ingestion_paused ? 'warning' : 'healthy'}
+        subValue={
+          <span>Uptime {uptimeStr}</span>
         }
       />
 
       {/* 2. Today's Executions */}
       <StatCard
-        title="Executions"
+        title="Today's executions"
         mainValue={signals.length}
-        subValue={executedSignals.length > 0 ? `Avg Broker Latency: ${avgLatencyStr}` : 'No executions recorded'}
-        icon={<Zap className="w-4 h-4 text-emerald-400" />}
-        badge={
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
-            {fillRatio}
+        statusDot={signals.length > 0 ? 'healthy' : 'neutral'}
+        subValue={
+          <span>
+            {fillRatio} • {executedSignals.length > 0 ? `Avg latency ${avgLatencyStr}` : 'No executions'}
           </span>
         }
       />
 
       {/* 3. Queue Health */}
       <StatCard
-        title="Queue Health"
-        mainValue={`${pendingSignals.length} Pending`}
-        subValue={`${failedSignals.length} failed • ${pendingSignals.length} in-flight`}
-        icon={<Server className="w-4 h-4 text-slate-400" />}
-        badge={
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-            FIFO Queue
-          </span>
+        title="Queue health"
+        mainValue={`${pendingSignals.length} in-flight`}
+        statusDot={pendingSignals.length > 0 ? 'warning' : 'healthy'}
+        subValue={
+          <span>Queue lock 0 ms • {failedSignals.length} failed</span>
         }
       />
 
-      {/* 4. Terminal Protocol / Account */}
+      {/* 4. Terminal Protocol */}
       <StatCard
-        title="MT5 Account Equity"
-        mainValue={status.mt5_connected && status.equity ? `$${status.equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : (status.mt5_connected ? 'Connected' : 'Offline')}
-        subValue={status.mt5_connected && status.mt5_account ? `MT5 #${status.mt5_account} • Balance: $${status.balance.toFixed(2)}` : 'Awaiting MT5 Socket Connection'}
-        icon={<Clock className="w-4 h-4 text-emerald-500" />}
-        badge={
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-            status.mt5_connected
-              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
-              : 'bg-rose-500/10 text-rose-500 border-rose-500/30'
-          }`}>
-            {status.mt5_connected ? 'LIVE TCP' : 'OFFLINE'}
+        title="Terminal protocol"
+        mainValue={
+          status.mt5_connected && status.equity
+            ? `$${status.equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            : status.mt5_connected
+            ? 'Connected'
+            : 'Offline'
+        }
+        statusDot={status.mt5_connected ? 'healthy' : 'neutral'}
+        subValue={
+          <span>
+            {status.mt5_connected && status.mt5_account
+              ? `MT5 #${status.mt5_account} • $${status.balance.toFixed(2)}`
+              : 'Waiting for MT5 on 127.0.0.1:8282'}
           </span>
         }
       />
     </div>
   );
 };
-

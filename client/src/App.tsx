@@ -10,6 +10,7 @@ import { TelemetryMatrix } from './components/telemetry/TelemetryMatrix.js';
 import { EmergencyToolbar } from './components/telemetry/EmergencyToolbar.js';
 import { SignalsLedger } from './components/ledger/SignalsLedger.js';
 import { LivePositionsTable } from './components/ledger/LivePositionsTable.js';
+import { ExecutionReceiptDrawer } from './components/audit/ExecutionReceiptDrawer.js';
 import { ManualSignalModal } from './components/modals/ManualSignalModal.js';
 import { LoginPage } from './components/auth/LoginPage.js';
 
@@ -20,6 +21,7 @@ export function App() {
   });
   const [activeTab, setActiveTab] = useState<'console' | 'positions'>('console');
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
   // Hook state
   const {
@@ -33,7 +35,8 @@ export function App() {
     setSelectedSignal,
     pendingCount,
     refreshSignals,
-    handleIncomingWsSignal
+    handleIncomingWsSignal,
+    isLoading
   } = useSignalsLedger();
 
   const {
@@ -80,13 +83,13 @@ export function App() {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 dark:bg-[#080C14] dark:text-slate-100 select-none">
-      {/* 1. Slim Left Icon Sidebar */}
+    <div className="flex h-screen w-screen overflow-hidden bg-canvas text-primary select-none font-sans">
+      {/* 1. Left Icon Rail (48px wide) */}
       <SlimSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* 2. Main Viewport Container */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Fixed Top Navbar */}
+        {/* Fixed Top Navbar (48px tall) */}
         <TopNavbar
           mt5Connected={status.mt5_connected}
           theme={theme}
@@ -99,13 +102,13 @@ export function App() {
         />
 
         {/* Scrollable Dashboard Body */}
-        <main className="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto w-full space-y-6">
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto max-w-7xl mx-auto w-full space-y-4">
           {activeTab === 'console' ? (
             <>
-              {/* Operational Telemetry Matrix */}
+              {/* Horizontal Status Strip */}
               <TelemetryMatrix status={status} signals={rawSignals} />
 
-              {/* Action & Emergency Toolbar */}
+              {/* Inline Action Bar */}
               <EmergencyToolbar
                 isPaused={status.ea_ingestion_paused}
                 onTogglePause={togglePause}
@@ -113,14 +116,18 @@ export function App() {
                 onFlattenAll={flattenAll}
               />
 
-              {/* Order Execution Stream / Signals Ledger */}
+              {/* Dense Table Signals Ledger */}
               <SignalsLedger
                 signals={signals}
                 currentFilter={filter}
                 setFilter={setFilter}
                 pendingCount={pendingCount}
                 selectedSignal={selectedSignal}
-                onSelectSignal={setSelectedSignal}
+                onSelectSignal={sig => {
+                  setSelectedSignal(sig);
+                }}
+                onOpenReceipt={() => setIsReceiptOpen(true)}
+                isLoading={isLoading}
               />
             </>
           ) : (
@@ -136,7 +143,14 @@ export function App() {
         </main>
       </div>
 
-      {/* Manual Signal Modal */}
+      {/* Slide-In Broker Ticket Drawer (400px) */}
+      <ExecutionReceiptDrawer
+        signal={selectedSignal}
+        isOpen={isReceiptOpen}
+        onClose={() => setIsReceiptOpen(false)}
+      />
+
+      {/* Manual Order Dispatch Modal */}
       <ManualSignalModal
         isOpen={isManualModalOpen}
         onClose={() => setIsManualModalOpen(false)}
@@ -149,4 +163,3 @@ export function App() {
     </div>
   );
 }
-

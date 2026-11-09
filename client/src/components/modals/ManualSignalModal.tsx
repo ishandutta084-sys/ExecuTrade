@@ -62,71 +62,72 @@ export const ManualSignalModal: React.FC<ManualSignalModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 font-mono animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-white dark:bg-[#0E1422] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 font-sans select-none animate-in fade-in duration-fast">
+      <div className="w-full max-w-sm bg-surface border border-hairline rounded-panel p-5 shadow-none space-y-4">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between pb-3 border-b border-hairline">
           <div className="flex items-center gap-2">
-            <Send className="w-4 h-4 text-emerald-500" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              Manual Order Dispatch
+            <Send className="w-3.5 h-3.5 text-brass" strokeWidth={1.5} />
+            <h3 className="text-sm font-semibold text-primary">
+              Manual order dispatch
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            className="p-1 rounded-control text-secondary hover:text-primary hover:bg-raised transition-colors cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" strokeWidth={1.5} />
           </button>
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div className="p-2.5 rounded-control bg-sell/10 border border-sell/30 text-sell text-xs flex items-center gap-2">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
           {/* Action Toggle (BUY / SELL) */}
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setAction('BUY')}
-              className={`py-2 rounded-xl font-bold transition cursor-pointer border ${
+              className={`py-1.5 rounded-control text-xs font-semibold transition-colors cursor-pointer border ${
                 action === 'BUY'
-                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/20'
-                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-400 border-slate-200 dark:border-slate-800'
+                  ? 'bg-buy/15 text-buy border-buy'
+                  : 'bg-raised text-secondary border-hairline hover:text-primary'
               }`}
             >
-              BUY / LONG
+              BUY / Long
             </button>
             <button
               type="button"
               onClick={() => setAction('SELL')}
-              className={`py-2 rounded-xl font-bold transition cursor-pointer border ${
+              className={`py-1.5 rounded-control text-xs font-semibold transition-colors cursor-pointer border ${
                 action === 'SELL'
-                  ? 'bg-rose-500 text-white border-rose-400 shadow-md shadow-rose-500/20'
-                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-400 border-slate-200 dark:border-slate-800'
+                  ? 'bg-sell/15 text-sell border-sell'
+                  : 'bg-raised text-secondary border-hairline hover:text-primary'
               }`}
             >
-              SELL / SHORT
+              SELL / Short
             </button>
           </div>
 
           {/* Symbol & Lot */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-slate-400 uppercase block mb-1">Symbol</label>
+              <label className="text-[11px] font-medium text-secondary mb-1 block">Symbol</label>
               <input
                 type="text"
                 value={symbol}
                 onChange={e => setSymbol(e.target.value)}
                 required
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-100"
+                className="w-full px-2.5 py-1.5 rounded-control bg-raised border border-hairline font-mono text-xs font-medium text-primary uppercase focus:outline-none focus:border-brass transition-colors"
               />
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase block mb-1">Lot Size</label>
+              <label className="text-[11px] font-medium text-secondary mb-1 block">Lot size</label>
               <input
                 type="number"
                 step="0.01"
@@ -134,7 +135,7 @@ export const ManualSignalModal: React.FC<ManualSignalModalProps> = ({
                 value={lot}
                 onChange={e => setLot(e.target.value)}
                 required
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-100"
+                className="w-full px-2.5 py-1.5 rounded-control bg-raised border border-hairline font-mono text-xs text-primary tabular-nums focus:outline-none focus:border-brass transition-colors"
               />
             </div>
           </div>
@@ -142,35 +143,35 @@ export const ManualSignalModal: React.FC<ManualSignalModalProps> = ({
           {/* SL & TP */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-slate-400 uppercase block mb-1">Stop Loss (Price)</label>
+              <label className="text-[11px] font-medium text-secondary mb-1 block">Stop loss</label>
               <input
                 type="number"
                 step="0.01"
                 value={sl}
                 onChange={e => setSl(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-100"
+                className="w-full px-2.5 py-1.5 rounded-control bg-raised border border-hairline font-mono text-xs text-primary tabular-nums focus:outline-none focus:border-brass transition-colors"
               />
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase block mb-1">Take Profit (Price)</label>
+              <label className="text-[11px] font-medium text-secondary mb-1 block">Take profit</label>
               <input
                 type="number"
                 step="0.01"
                 value={tp}
                 onChange={e => setTp(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-100"
+                className="w-full px-2.5 py-1.5 rounded-control bg-raised border border-hairline font-mono text-xs text-primary tabular-nums focus:outline-none focus:border-brass transition-colors"
               />
             </div>
           </div>
 
-          {/* Strategy Name */}
+          {/* Strategy Tag */}
           <div>
-            <label className="text-[10px] text-slate-400 uppercase block mb-1">Strategy Tag</label>
+            <label className="text-[11px] font-medium text-secondary mb-1 block">Strategy tag</label>
             <input
               type="text"
               value={strategy}
               onChange={e => setStrategy(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold focus:outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-100"
+              className="w-full px-2.5 py-1.5 rounded-control bg-raised border border-hairline font-mono text-xs text-primary focus:outline-none focus:border-brass transition-colors"
             />
           </div>
 
@@ -178,13 +179,12 @@ export const ManualSignalModal: React.FC<ManualSignalModalProps> = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition cursor-pointer disabled:opacity-50"
+            className="w-full py-2 rounded-control bg-brass hover:bg-brassHover text-[#121110] font-medium text-xs transition-colors cursor-pointer disabled:opacity-50 mt-1"
           >
-            {isSubmitting ? 'Transmitting to MT5...' : 'Transmit Order to MT5 Bridge'}
+            {isSubmitting ? 'Transmitting order...' : 'Transmit order to MT5 bridge'}
           </button>
         </form>
       </div>
     </div>
   );
 };
-
