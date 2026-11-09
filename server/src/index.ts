@@ -40,7 +40,6 @@ async function bootstrap() {
   await app.register(fastifyStatic, {
     root: clientDistPath,
     prefix: '/',
-    wildcard: false,
     index: ['index.html']
   });
 

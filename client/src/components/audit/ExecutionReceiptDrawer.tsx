@@ -287,3 +287,4 @@ export const ExecutionReceiptDrawer: React.FC<ExecutionReceiptDrawerProps> = ({
     </>
   );
 };
+

@@ -145,3 +145,4 @@ export const SignalRow: React.FC<SignalRowProps> = ({
     </tr>
   );
 };
+
