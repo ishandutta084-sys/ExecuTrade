@@ -304,7 +304,7 @@ export const EquityHeroSection: React.FC<EquityHeroSectionProps> = ({
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-tertiary">Total Trades:</span>
-            <span className="font-semibold text-primary">{signals.length}</span>
+            <span className="font-semibold text-primary">{(signals || []).length}</span>
           </div>
         </div>
       </div>

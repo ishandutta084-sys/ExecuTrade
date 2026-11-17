@@ -20,22 +20,28 @@ export const TradeAnalyticsView: React.FC = () => {
   const { analytics, isLoading, refreshAnalytics } = useTradeAnalytics();
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
 
-  if (isLoading && !analytics) {
+  if (!analytics) {
     return (
-      <div className="flex items-center justify-center h-96 border border-hairline bg-surface rounded-panel">
+      <div className="flex flex-col items-center justify-center h-96 border border-hairline bg-surface rounded-panel gap-3">
         <div className="flex items-center gap-2.5 text-xs font-mono text-brand">
           <RefreshCw className="w-4 h-4 animate-spin" />
           <span>Computing quantitative trading metrics...</span>
         </div>
+        <button
+          onClick={refreshAnalytics}
+          className="px-3 py-1.5 rounded-control bg-raised border border-hairline text-xs font-mono text-primary hover:border-brass transition-colors cursor-pointer"
+        >
+          Retry Calculation
+        </button>
       </div>
     );
   }
 
-  const a = analytics!;
+  const a = analytics;
 
   // Max absolute PnL for scaling Day of Month Bar Chart
   const maxDayPnl = Math.max(
-    ...a.day_of_month_stats.map(d => Math.abs(d.avg_pnl)),
+    ...(a.day_of_month_stats || []).map(d => Math.abs(d.avg_pnl)),
     10
   );
 
@@ -257,7 +263,7 @@ export const TradeAnalyticsView: React.FC = () => {
             <line x1="15" y1="160" x2="915" y2="160" stroke="currentColor" strokeOpacity={0.05} strokeDasharray="3 3" />
 
             {/* Bars for Day 1 to 31 */}
-            {a.day_of_month_stats.map((stat, idx) => {
+            {(a.day_of_month_stats || []).map((stat, idx) => {
               const x = 30 + idx * 28;
               const barHeight = maxDayPnl > 0 ? (Math.abs(stat.avg_pnl) / maxDayPnl) * 55 : 0;
               const isPositive = stat.avg_pnl > 0;
@@ -375,7 +381,7 @@ export const TradeAnalyticsView: React.FC = () => {
           </div>
 
           <div className="space-y-2.5 pt-1">
-            {a.weekday_stats.map(w => {
+            {(a.weekday_stats || []).map(w => {
               const isProfit = w.avg_pnl >= 0;
               return (
                 <div
@@ -471,7 +477,7 @@ export const TradeAnalyticsView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-hairline">
-              {a.recent_trades_performance.map(t => {
+              {(a.recent_trades_performance || []).map(t => {
                 const isWin = t.pnl > 0;
                 return (
                   <tr key={t.ticket} className="hover:bg-raised/40 transition-colors">

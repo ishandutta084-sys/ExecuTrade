@@ -18,6 +18,8 @@ export default {
         tertiary: 'var(--text-tertiary)',
         brass: 'var(--brand-brass)',
         brassHover: 'var(--brand-brass-hover)',
+        brand: 'var(--brand-brass)',
+        'brand-hover': 'var(--brand-brass-hover)',
         buy: 'var(--status-buy)',
         sell: 'var(--status-sell)',
         pending: 'var(--status-pending)',
@@ -53,9 +55,6 @@ export default {
       transitionDuration: {
         fast: '120ms',
         base: '180ms',
-      },
-      boxShadow: {
-        none: 'none',
       }
     },
   },

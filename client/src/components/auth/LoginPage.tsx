@@ -27,12 +27,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center bg-canvas text-primary font-sans p-4 select-none">
+    <div className="min-h-screen w-screen flex items-center justify-center bg-[#080F1E] text-white font-sans p-4 select-none">
       {/* Centered Ticket Slip Card */}
-      <div className="w-full max-w-sm bg-surface border border-hairline rounded-panel p-7 shadow-sm space-y-5">
+      <div className="w-full max-w-sm bg-[#0D1B3E] border border-white/10 rounded-panel p-7 shadow-2xl space-y-5">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center space-y-3">
-          <div className="w-16 h-16 rounded-panel border border-hairline flex items-center justify-center bg-white p-2 shadow-sm">
+          <div className="w-16 h-16 rounded-panel border border-white/10 flex items-center justify-center bg-white p-2 shadow-sm">
             <img
               src="/logo.png"
               alt="TI AUTOPILOT"
@@ -40,8 +40,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-primary tracking-tight">TI AUTOPILOT</h1>
-            <p className="text-xs text-secondary mt-0.5">Algorithmic Trading Platform</p>
+            <h1 className="text-lg font-bold text-white tracking-tight">TI AUTOPILOT</h1>
+            <p className="text-xs text-slate-400 mt-0.5">Algorithmic Trading Platform</p>
           </div>
         </div>
 
@@ -55,30 +55,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-3.5 text-xs">
           <div>
-            <label className="text-[11px] font-medium text-secondary mb-1 block">Operator ID</label>
+            <label className="text-[11px] font-medium text-slate-300 mb-1 block">Operator ID</label>
             <div className="relative">
-              <User className="w-3.5 h-3.5 text-tertiary absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.5} />
+              <User className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.5} />
               <input
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 required
-                className="w-full pl-8 pr-2.5 py-1.5 rounded-control bg-raised border border-hairline font-mono text-xs text-primary focus:outline-none focus:border-brass transition-colors"
+                className="w-full pl-8 pr-2.5 py-1.5 rounded-control bg-[#15264C] border border-white/10 font-mono text-xs text-white focus:outline-none focus:border-[#EA7A24] transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[11px] font-medium text-secondary mb-1 block">Security Passkey</label>
+            <label className="text-[11px] font-medium text-slate-300 mb-1 block">Security Passkey</label>
             <div className="relative">
-              <Lock className="w-3.5 h-3.5 text-tertiary absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.5} />
+              <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.5} />
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full pl-8 pr-2.5 py-1.5 rounded-control bg-raised border border-hairline font-mono text-xs text-primary focus:outline-none focus:border-brass transition-colors"
+                className="w-full pl-8 pr-2.5 py-1.5 rounded-control bg-[#15264C] border border-white/10 font-mono text-xs text-white focus:outline-none focus:border-[#EA7A24] transition-colors"
               />
             </div>
           </div>
