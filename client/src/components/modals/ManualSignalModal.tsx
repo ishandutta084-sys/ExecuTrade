@@ -179,7 +179,7 @@ export const ManualSignalModal: React.FC<ManualSignalModalProps> = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-2 rounded-control bg-brass hover:bg-brassHover text-[#121110] font-medium text-xs transition-colors cursor-pointer disabled:opacity-50 mt-1"
+            className="w-full py-2 rounded-control bg-[#EA7A24] hover:bg-[#D66A17] text-white font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50 mt-1 shadow-xs"
           >
             {isSubmitting ? 'Transmitting order...' : 'Transmit order to MT5 bridge'}
           </button>

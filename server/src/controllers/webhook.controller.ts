@@ -121,36 +121,35 @@ async function processSignalInBackground(signal: TradingSignal, startTime: numbe
       await positionTracker.awaitInFlight(signal.strategy, signal.symbol);
 
       const active = positionTracker.getActivePosition(signal.strategy, signal.symbol);
-      if (!active) {
-        logger.warn({ strategy: signal.strategy, symbol: signal.symbol }, 'No active position found to close');
-        signalLedger.updateExecutionResult(signal.signal_id, 'DROPPED', {
-          execution_message: 'No open position found for strategy to close'
-        });
-        return;
-      }
+      const ticketToClose = active?.position_ticket || 0;
+      const magicToClose = active?.magic || brokerNormalizer.getStrategyMagic(signal.strategy);
 
       try {
         const res = await mt5TcpHub.sendCommand({
           action: 'POSITION_CLOSE',
           request_id: `close_${signal.signal_id}`,
           strategy: signal.strategy,
-          magic: active.magic,
-          position_ticket: active.position_ticket,
+          magic: magicToClose,
+          position_ticket: ticketToClose,
           symbol
         });
 
-        if (res.status === 'EXECUTED') {
-          positionTracker.recordClosePosition(signal.strategy, signal.symbol, active.position_ticket);
+        if (res.status === 'EXECUTED' || res.status === 'NO_POSITION') {
+          if (active) {
+            positionTracker.recordClosePosition(signal.strategy, signal.symbol, active.position_ticket);
+          }
           signalLedger.updateExecutionResult(signal.signal_id, 'EXECUTED', {
-            position_ticket: active.position_ticket,
-            execution_message: 'Position closed successfully',
+            position_ticket: ticketToClose || res.position_ticket,
+            execution_message: res.status === 'NO_POSITION'
+              ? 'Position already closed (TP/SL hit)'
+              : (res.message || 'Position closed successfully'),
             latency_ms: Date.now() - startTime,
             executed_price: res.executed_price
           });
 
           wsTelemetry.broadcast({
             type: 'SIGNAL_EXECUTED',
-            payload: { signal_id: signal.signal_id, status: 'EXECUTED', ticket: active.position_ticket }
+            payload: { signal_id: signal.signal_id, status: 'EXECUTED', ticket: ticketToClose || res.position_ticket }
           });
         } else {
           signalLedger.updateExecutionResult(signal.signal_id, 'FAILED', {

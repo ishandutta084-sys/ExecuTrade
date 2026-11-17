@@ -1,0 +1,53 @@
+import { mt5TcpHub } from '../socket/mt5-tcp-hub.js';
+import { executionMutex } from '../core/execution-mutex.js';
+import { signalLedger } from '../services/signal-ledger.service.js';
+import { wsTelemetry } from '../services/ws-telemetry.service.js';
+import { equityHistoryService } from '../services/equity-history.service.js';
+import { env } from '../config/env.js';
+let isIngestionPaused = false;
+const startTime = Date.now();
+export function getIngestionPaused() {
+    return isIngestionPaused;
+}
+export async function getBridgeStatus(req, reply) {
+    const uptimeSeconds = Math.floor((Date.now() - startTime) / 1000);
+    const isMt5Connected = mt5TcpHub.isConnected();
+    const accountData = mt5TcpHub.getAccountData();
+    return reply.send({
+        status: 'SUCCESS',
+        uptime_seconds: uptimeSeconds,
+        ea_ingestion_paused: isIngestionPaused,
+        mt5_connected: isMt5Connected,
+        mt5_account: accountData?.account_number || null,
+        balance: accountData?.balance || 0,
+        equity: accountData?.equity || 0,
+        queue_pending_count: executionMutex.pendingCount,
+        ws_clients_count: wsTelemetry.clientCount,
+        max_spread_pips: env.MAX_SPREAD_PIPS,
+        max_slippage_points: env.MAX_SLIPPAGE_POINTS
+    });
+}
+export async function togglePause(req, reply) {
+    isIngestionPaused = !isIngestionPaused;
+    return reply.send({
+        status: 'SUCCESS',
+        ea_ingestion_paused: isIngestionPaused,
+        message: isIngestionPaused ? 'EA ingestion PAUSED' : 'EA ingestion RESUMED'
+    });
+}
+export async function getAlerts(req, reply) {
+    const alerts = signalLedger.getAlerts(15);
+    return reply.send({
+        status: 'SUCCESS',
+        unread_count: alerts.filter(a => a.type === 'ERROR').length,
+        alerts
+    });
+}
+export async function getEquityCurve(req, reply) {
+    const query = req.query;
+    const timeframe = query?.timeframe || '24h';
+    const accountData = mt5TcpHub.getAccountData();
+    const data = equityHistoryService.getEquityCurve(timeframe, accountData);
+    return reply.send(data);
+}
+//# sourceMappingURL=telemetry.controller.js.map

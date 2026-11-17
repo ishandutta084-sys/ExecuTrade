@@ -3,6 +3,7 @@ import { mt5TcpHub } from '../socket/mt5-tcp-hub.js';
 import { executionMutex } from '../core/execution-mutex.js';
 import { signalLedger } from '../services/signal-ledger.service.js';
 import { wsTelemetry } from '../services/ws-telemetry.service.js';
+import { equityHistoryService } from '../services/equity-history.service.js';
 import { env } from '../config/env.js';
 
 let isIngestionPaused = false;
@@ -48,5 +49,13 @@ export async function getAlerts(req: FastifyRequest, reply: FastifyReply) {
     unread_count: alerts.filter(a => a.type === 'ERROR').length,
     alerts
   });
+}
+
+export async function getEquityCurve(req: FastifyRequest, reply: FastifyReply) {
+  const query = req.query as { timeframe?: string };
+  const timeframe = query?.timeframe || '24h';
+  const accountData = mt5TcpHub.getAccountData();
+  const data = equityHistoryService.getEquityCurve(timeframe, accountData);
+  return reply.send(data);
 }
 

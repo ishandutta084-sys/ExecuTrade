@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ExecuTrade | Automated Bridge Console</title>
+  <title>TI AUTOPILOT | Automated Trading Console</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/static/favicon.png" />
+  <link rel="shortcut icon" href="/static/favicon.ico" />
 
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -108,21 +112,17 @@
     <!-- ---------------------------------------------------- -->
     <aside class="w-16 shrink-0 h-full flex flex-col items-center justify-between py-4 bg-white dark:bg-[#0B0F19] border-r border-slate-200 dark:border-slate-800/80 z-30 transition-colors">
       
-      <!-- Top: Elegant Minimalist 'ET' Monogram Brand Badge -->
+      <!-- Top: TI AUTOPILOT Brand Badge -->
       <div class="flex flex-col items-center gap-6 w-full">
         
-        <a href="/dashboard" title="ExecuTrade Bridge Console" class="group relative flex items-center justify-center">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-900 to-slate-950 dark:from-[#0E1422] dark:to-[#080C14] p-[1.5px] border border-emerald-400 shadow-glow-emerald group-hover:scale-105 transition-transform duration-200">
-            <div class="w-full h-full rounded-[10px] bg-slate-950 flex items-center justify-center">
-              <span class="font-mono font-black text-sm text-white tracking-tighter flex items-center">
-                ET<span class="text-emerald-400 text-xs ml-0.5 animate-pulse">.</span>
-              </span>
-            </div>
+        <a href="/dashboard" title="TI AUTOPILOT Console" class="group relative flex items-center justify-center">
+          <div class="w-10 h-10 rounded-xl bg-white p-1 border border-slate-200 shadow-sm group-hover:scale-105 transition-transform duration-200 flex items-center justify-center">
+            <img src="/static/logo.png" alt="TI AUTOPILOT Logo" class="w-full h-full object-contain" />
           </div>
           <!-- Pulse Dot -->
           <span class="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-white dark:border-slate-950"></span>
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500 border border-white"></span>
           </span>
         </a>
 
@@ -181,8 +181,8 @@
         
         <!-- Left: Brand Title & Breadcrumb -->
         <div class="flex items-center gap-2 shrink-0">
-          <h1 class="text-base font-bold text-slate-900 dark:text-white font-mono tracking-tight">ExecuTrade</h1>
-          <span class="text-xs text-slate-500 font-mono">/ Console</span>
+          <h1 class="text-base font-bold text-slate-900 font-sans tracking-tight">TI AUTOPILOT</h1>
+          <span class="text-xs text-slate-400 font-mono">/ Console</span>
         </div>
 
         <!-- Center: Global Search Input -->
@@ -242,17 +242,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Theme Toggle Switch (Sun / Moon) -->
-          <button 
-            id="theme-toggle-btn"
-            onclick="toggleTheme()" 
-            class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition"
-            title="Toggle Light / Dark Mode"
-          >
-            <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
-            <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-slate-600"></i>
-          </button>
 
           <!-- Divider -->
           <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
@@ -747,14 +736,14 @@
     }
 
     function setupUserProfile(user) {
-      const email = user.email || 'admin@executrade.internal';
+      const email = user.email || 'admin@tiautopilot.internal';
       const emailEl = document.getElementById('user-email-display');
       const avatarEl = document.getElementById('user-avatar-initials');
 
       if (emailEl) emailEl.innerText = email;
       if (avatarEl) {
         const namePart = email.split('@')[0];
-        const initials = namePart.length >= 2 ? namePart.substring(0, 2).toUpperCase() : 'ET';
+        const initials = namePart.length >= 2 ? namePart.substring(0, 2).toUpperCase() : 'TI';
         avatarEl.innerText = initials;
       }
     }
@@ -798,22 +787,16 @@
     // 4. THEME ENGINE (persisted in localStorage.theme)
     // --------------------------------------------------------
     function applyTheme(theme) {
-      state.theme = theme;
-      localStorage.setItem('theme', theme);
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark');
-      }
+      state.theme = 'light';
+      localStorage.setItem('theme', 'light');
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
     }
 
     function toggleTheme() {
-      const next = state.theme === 'dark' ? 'light' : 'dark';
-      applyTheme(next);
+      applyTheme('light');
     }
-    applyTheme(state.theme);
+    applyTheme('light');
 
     // --------------------------------------------------------
     // 5. OPERATIONAL TELEMETRY & BRIDGE STATE MATRIX

@@ -55,10 +55,10 @@ export const EmergencyToolbar: React.FC<EmergencyToolbarProps> = ({
       {/* Inline Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 py-1">
         <div className="flex items-center gap-2">
-          {/* Primary Filled Brass Action */}
+          {/* Primary Filled Action */}
           <button
             onClick={onOpenManualModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-brass hover:bg-brassHover text-[#121110] text-xs font-medium transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-[#EA7A24] hover:bg-[#D66A17] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
             <span>Push manual signal</span>

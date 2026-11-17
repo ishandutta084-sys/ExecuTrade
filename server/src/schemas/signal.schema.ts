@@ -4,7 +4,10 @@ export const TradingSignalSchema = z.object({
   secret: z.string().optional(),
   signal_id: z.string().min(1).max(100),
   strategy: z.string().min(1).default('MKL_GCB'),
-  action: z.enum(['BUY', 'SELL', 'CLOSE', 'EXIT', 'FLATTEN']),
+  action: z.preprocess(
+    (val) => (typeof val === 'string' ? val.toUpperCase().trim() : val),
+    z.enum(['BUY', 'SELL', 'CLOSE', 'EXIT', 'FLATTEN'])
+  ),
   symbol: z.string().min(1),
   lot: z.coerce.number().positive().optional().default(0.01),
   sl: z.coerce.number().optional().default(0),

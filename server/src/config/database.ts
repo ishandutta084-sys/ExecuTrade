@@ -92,6 +92,19 @@ export function initDatabase() {
 
     CREATE INDEX IF NOT EXISTS idx_positions_active ON strategy_positions(strategy, symbol, is_active);
     CREATE INDEX IF NOT EXISTS idx_positions_ticket ON strategy_positions(position_ticket);
+
+    CREATE TABLE IF NOT EXISTS equity_snapshots (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_number INTEGER NOT NULL,
+      balance REAL NOT NULL,
+      equity REAL NOT NULL,
+      free_margin REAL NOT NULL,
+      floating_pnl REAL DEFAULT 0,
+      timestamp INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_equity_account_time ON equity_snapshots(account_number, timestamp);
+    CREATE INDEX IF NOT EXISTS idx_equity_time ON equity_snapshots(timestamp);
   `);
 
   logger.info({ path: env.DB_PATH }, 'SQLite database initialized with built-in node:sqlite WAL mode');

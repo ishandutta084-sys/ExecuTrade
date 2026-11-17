@@ -3,6 +3,7 @@ import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { brokerNormalizer } from '../core/broker-normalizer.js';
 import { positionTracker } from '../core/position-tracker.js';
+import { equityHistoryService } from '../services/equity-history.service.js';
 
 export interface OrderSendRequest {
   request_id: string;
@@ -156,6 +157,7 @@ class Mt5TcpHub {
     // 5. Account Heartbeat Sync (every 1s)
     if (msg.event === 'ACCOUNT_SYNC') {
       this.latestAccountData = msg as AccountSyncData;
+      equityHistoryService.recordSnapshot(this.latestAccountData);
       if (this.onAccountSyncCallback) {
         this.onAccountSyncCallback(this.latestAccountData);
       }

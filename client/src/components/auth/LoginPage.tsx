@@ -29,15 +29,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   return (
     <div className="min-h-screen w-screen flex items-center justify-center bg-canvas text-primary font-sans p-4 select-none">
       {/* Centered Ticket Slip Card */}
-      <div className="w-full max-w-sm bg-surface border border-hairline rounded-panel p-6 shadow-none space-y-5">
-        {/* Monogram Header */}
-        <div className="flex flex-col items-center text-center space-y-2">
-          <div className="w-8 h-8 rounded-control border border-hairline flex items-center justify-center bg-raised text-brass font-mono font-semibold text-xs tracking-tighter">
-            ET
+      <div className="w-full max-w-sm bg-surface border border-hairline rounded-panel p-7 shadow-sm space-y-5">
+        {/* Brand Header */}
+        <div className="flex flex-col items-center text-center space-y-3">
+          <div className="w-16 h-16 rounded-panel border border-hairline flex items-center justify-center bg-white p-2 shadow-sm">
+            <img
+              src="/logo.png"
+              alt="TI AUTOPILOT"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-primary tracking-tight">ExecuTrade</h1>
-            <p className="text-xs text-secondary">Operator Authentication</p>
+            <h1 className="text-lg font-bold text-primary tracking-tight">TI AUTOPILOT</h1>
+            <p className="text-xs text-secondary mt-0.5">Algorithmic Trading Platform</p>
           </div>
         </div>
 
@@ -82,9 +86,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2 rounded-control bg-brass hover:bg-brassHover text-[#121110] font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 mt-1"
+            className="w-full py-2.5 rounded-control bg-[#EA7A24] hover:bg-[#D66A17] text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 mt-1 shadow-xs"
           >
-            <span>Access Bridge Console</span>
+            <span>Access TI AUTOPILOT Console</span>
             <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
           </button>
         </form>

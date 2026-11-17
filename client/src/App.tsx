@@ -4,9 +4,10 @@ import { useWebSocket } from './hooks/useWebSocket.js';
 import { useSignalsLedger } from './hooks/useSignalsLedger.js';
 import { useLivePositions } from './hooks/useLivePositions.js';
 import { useBridgeStatus } from './hooks/useBridgeStatus.js';
+import { useEquityCurve } from './hooks/useEquityCurve.js';
 import { SlimSidebar } from './components/layout/SlimSidebar.js';
 import { TopNavbar } from './components/layout/TopNavbar.js';
-import { TelemetryMatrix } from './components/telemetry/TelemetryMatrix.js';
+import { EquityHeroSection } from './components/telemetry/EquityHeroSection.js';
 import { EmergencyToolbar } from './components/telemetry/EmergencyToolbar.js';
 import { SignalsLedger } from './components/ledger/SignalsLedger.js';
 import { LivePositionsTable } from './components/ledger/LivePositionsTable.js';
@@ -58,6 +59,14 @@ export function App() {
     refreshStatus
   } = useBridgeStatus();
 
+  const {
+    timeframe,
+    setTimeframe,
+    data: equityCurveData,
+    isLoading: isEquityLoading,
+    updateFromWs: updateEquityFromWs
+  } = useEquityCurve('1D');
+
   // WebSocket message dispatcher
   const handleWsMessage = useCallback((msg: { type: string; payload: any }) => {
     if (msg.type === 'SIGNAL_RECEIVED' || msg.type === 'SIGNAL_EXECUTED') {
@@ -65,11 +74,12 @@ export function App() {
       refreshSignals();
     } else if (msg.type === 'ACCOUNT_SYNC') {
       updateFromWs(msg.payload);
+      updateEquityFromWs(msg.payload);
     } else if (msg.type === 'EMERGENCY_FLATTEN') {
       refreshPositions();
       refreshStatus();
     }
-  }, [handleIncomingWsSignal, refreshSignals, updateFromWs, refreshPositions, refreshStatus]);
+  }, [handleIncomingWsSignal, refreshSignals, updateFromWs, updateEquityFromWs, refreshPositions, refreshStatus]);
 
   useWebSocket(handleWsMessage);
 
@@ -105,8 +115,15 @@ export function App() {
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto max-w-7xl mx-auto w-full space-y-4">
           {activeTab === 'console' ? (
             <>
-              {/* Horizontal Status Strip */}
-              <TelemetryMatrix status={status} signals={rawSignals} />
+              {/* Homepage Hero Section: Interactive Portfolio Equity & Balance Curve */}
+              <EquityHeroSection
+                status={status}
+                signals={rawSignals}
+                equityCurveData={equityCurveData}
+                timeframe={timeframe}
+                onTimeframeChange={setTimeframe}
+                isLoading={isEquityLoading}
+              />
 
               {/* Inline Action Bar */}
               <EmergencyToolbar

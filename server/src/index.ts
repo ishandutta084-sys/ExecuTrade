@@ -11,7 +11,7 @@ import { wsTelemetry } from './services/ws-telemetry.service.js';
 import { handleTradingViewWebhook } from './controllers/webhook.controller.js';
 import { getSignals, searchSignals, postTestSignal } from './controllers/signals.controller.js';
 import { getLivePositions, closeSpecificPosition } from './controllers/positions.controller.js';
-import { getBridgeStatus, togglePause, getAlerts } from './controllers/telemetry.controller.js';
+import { getBridgeStatus, togglePause, getAlerts, getEquityCurve } from './controllers/telemetry.controller.js';
 import { flattenAllPositions } from './controllers/emergency.controller.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -28,6 +28,16 @@ async function bootstrap() {
   const app = Fastify({
     logger: false, // We use custom pino logger for zero routing overhead
     bodyLimit: 1048576 // 1MB payload limit
+  });
+
+  // Accept both JSON and plain-text webhook signals (e.g. TradingView alert_message)
+  app.addContentTypeParser(['application/json', 'text/plain'], { parseAs: 'string' }, (_req, body, done) => {
+    try {
+      const json = JSON.parse(body as string);
+      done(null, json);
+    } catch {
+      done(null, body);
+    }
   });
 
   await app.register(cors, {
@@ -81,6 +91,8 @@ async function bootstrap() {
 
   app.get('/api/bridge/status', getBridgeStatus);
   app.get('/api/bridge/toggle-state', getBridgeStatus);
+  app.get('/api/telemetry/equity-curve', getEquityCurve);
+  app.get('/api/equity-curve', getEquityCurve);
   app.post('/api/bridge/toggle-pause', togglePause);
   app.get('/api/alerts', getAlerts);
 
@@ -92,12 +104,12 @@ async function bootstrap() {
 
   logger.info(
     { port: env.PORT, host: env.HOST, mt5_tcp_port: env.MT5_TCP_PORT },
-    'ExecuTrade High-Throughput Engine online'
+    'TI AUTOPILOT High-Throughput Engine online'
   );
 
   // 5. Graceful Process Termination
   const shutdown = async (signal: string) => {
-    logger.info({ signal }, 'Shutting down ExecuTrade engine gracefully');
+    logger.info({ signal }, 'Shutting down TI AUTOPILOT engine gracefully');
     await app.close();
     process.exit(0);
   };

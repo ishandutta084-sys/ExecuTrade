@@ -20,3 +20,27 @@ export interface ExecutionAlert {
   created_at: string;
 }
 
+export interface EquityPoint {
+  timestamp: number;
+  time_str: string;
+  date_str: string;
+  balance: number;
+  equity: number;
+  floating_pnl: number;
+  drawdown_pct: number;
+}
+
+export interface EquityCurveData {
+  status: 'SUCCESS';
+  account_number: number | null;
+  current_balance: number;
+  current_equity: number;
+  starting_balance: number;
+  peak_equity: number;
+  max_drawdown_pct: number;
+  floating_pnl: number;
+  total_profit: number;
+  total_profit_pct: number;
+  points: EquityPoint[];
+}
+

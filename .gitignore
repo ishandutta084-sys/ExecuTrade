@@ -11,5 +11,6 @@ venv/
 env/
 *.ex5
 node_modules/
-dist/
 .DS_Store
+cloudflared.exe
+scratch/

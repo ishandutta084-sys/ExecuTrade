@@ -40,15 +40,36 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
 
   return (
     <header className="h-12 shrink-0 border-b border-hairline bg-surface px-4 flex items-center justify-between gap-4 z-30 select-none">
-      {/* Brand & Breadcrumb */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-primary tracking-tight">
-          ExecuTrade
-        </span>
-        <span className="text-xs text-tertiary">/</span>
-        <span className="text-xs font-medium text-secondary">
-          Console
-        </span>
+      {/* Top Left: Brand, Breadcrumb & Theme Switch Button */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold text-primary tracking-tight">
+            TI AUTOPILOT
+          </span>
+          <span className="text-xs text-tertiary">/</span>
+          <span className="text-xs font-medium text-secondary">
+            Console
+          </span>
+        </div>
+
+        {/* Top Left Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-control text-xs font-medium border border-hairline bg-raised hover:border-brass/70 text-secondary hover:text-primary transition-all cursor-pointer shadow-2xs"
+        >
+          {theme === 'dark' ? (
+            <>
+              <Sun className="w-3.5 h-3.5 text-brass" strokeWidth={1.75} />
+              <span className="text-[11px] font-mono hidden sm:inline text-primary">Light</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-3.5 h-3.5 text-primary" strokeWidth={1.75} />
+              <span className="text-[11px] font-mono hidden sm:inline text-primary">Dark</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* Flat Search Input with "/" Keycap */}
@@ -135,15 +156,6 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
             </div>
           )}
         </div>
-
-        {/* Dark / Light Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Switch to Paper Light Theme' : 'Switch to Warm Graphite Dark Theme'}
-          className="p-1.5 rounded-control text-secondary hover:text-primary hover:bg-raised border border-hairline transition-colors cursor-pointer"
-        >
-          {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-brass" strokeWidth={1.5} /> : <Moon className="w-3.5 h-3.5 text-secondary" strokeWidth={1.5} />}
-        </button>
 
         {/* Logout */}
         <button

@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2026, ExecuTrade"
 #property link      "https://github.com/executrade"
-#property version   "2.00"
+#property version   "2.20"
 #property description "High-Throughput Non-Blocking TCP Bridge between MT5 and Node.js"
 
 #include <Trade\Trade.mqh>
@@ -23,6 +23,9 @@ input group "=== Trading Safety ==="
 input ulong    InpDefaultMagic   = 101001;      // Default Magic Number
 input ulong    InpMaxDeviation   = 30;          // Max Slippage (points)
 input bool     InpAutoSyncSpecs  = true;        // Sync MarketWatch specs on connect
+
+input group "=== Symbol Resolution ==="
+input string   InpSymbolOverride = "";          // Optional pins, e.g. XAUUSD=GOLD (separate multiple with ;)
 
 //--- GLOBAL VARIABLES
 CTrade         g_trade;
@@ -42,25 +45,21 @@ int OnInit()
 {
    Print("[ExecuTrade] Bridge EA initializing...");
 
-   // Initialize CTrade helper
    g_trade.SetExpertMagicNumber(InpDefaultMagic);
    g_trade.SetDeviationInPoints(InpMaxDeviation);
-   g_trade.SetTypeFilling(ORDER_FILLING_IOC); // Default to IOC, dynamic per symbol
+   g_trade.SetTypeFilling(ORDER_FILLING_IOC);
 
-   // Check if Algo Trading is allowed by user/terminal
    if(!MQLInfoInteger(MQL_TRADE_ALLOWED))
    {
       Print("[ExecuTrade] WARNING: Algo Trading is DISABLED in MT5 toolbar. Please click the 'Algo Trading' button.");
    }
 
-   // Enable 10ms High-Frequency Millisecond Timer (100 ticks per second)
    if(!EventSetMillisecondTimer(10))
    {
       Print("[ExecuTrade] Error: Failed to set millisecond timer!");
       return(INIT_FAILED);
    }
 
-   // Attempt initial connection
    ConnectToNodeServer();
 
    return(INIT_SUCCEEDED);
@@ -84,12 +83,11 @@ void OnTimer()
 {
    ulong now = GetTickCount64();
 
-   // Update on-chart telemetry comment every ~500ms
    static ulong lastCommentUpdate = 0;
    if(now - lastCommentUpdate >= 500)
    {
       lastCommentUpdate = now;
-      Comment(StringFormat("=== ExecuTrade Bridge v2.0 ===\n" +
+      Comment(StringFormat("=== ExecuTrade Bridge v2.2 ===\n" +
                            "Status: %s\n" +
                            "Node Hub: %s:%d\n" +
                            "Account: %I64d | Balance: $%.2f | Equity: $%.2f\n" +
@@ -102,7 +100,7 @@ void OnTimer()
                            MQLInfoInteger(MQL_TRADE_ALLOWED) ? "ENABLED" : "DISABLED (Click 'Algo Trading' in MT5 toolbar)"));
    }
 
-   // 1. Maintain Socket Connection (Retry every 1,000ms if disconnected)
+   // 1. Maintain Socket Connection
    if(!g_isConnected || g_socket == INVALID_HANDLE)
    {
       static ulong lastReconnectAttempt = 0;
@@ -114,7 +112,7 @@ void OnTimer()
       return;
    }
 
-   // 2. Heartbeat Watchdog: Check if server died or half-open socket (5,000ms timeout)
+   // 2. Heartbeat Watchdog
    if(now - g_lastHeartbeat > 5000)
    {
       Print("[ExecuTrade] Warning: No heartbeat from Node.js server for >5s. Forcing reconnect.");
@@ -122,10 +120,10 @@ void OnTimer()
       return;
    }
 
-   // 3. Read Incoming Socket Packets (Non-blocking)
+   // 3. Read Incoming Socket Packets
    ReadSocketData();
 
-   // 4. Periodic Account Sync (Every 1,000ms)
+   // 4. Periodic Account Sync
    if(now - g_lastAccountSync >= 1000)
    {
       g_lastAccountSync = now;
@@ -147,7 +145,6 @@ bool ConnectToNodeServer()
       return false;
    }
 
-   // Connect with 1000ms timeout for reliable local loopback
    if(!SocketConnect(g_socket, InpHost, InpPort, 1000))
    {
       int err = GetLastError();
@@ -162,7 +159,6 @@ bool ConnectToNodeServer()
    g_rxBuffer = "";
    PrintFormat("[ExecuTrade] Successfully connected to Node.js Server at %s:%d", InpHost, InpPort);
 
-   // Sync MarketWatch Specifications to Node.js Normalizer
    if(InpAutoSyncSpecs)
    {
       SendBrokerSpecsSync();
@@ -195,7 +191,7 @@ bool SendSocketMessage(const string json)
    string payload = json + "\n";
    uchar buffer[];
    StringToCharArray(payload, buffer, 0, WHOLE_ARRAY, CP_UTF8);
-   int len = ArraySize(buffer) - 1; // remove null terminator
+   int len = ArraySize(buffer) - 1;
 
    int sent = SocketSend(g_socket, buffer, len);
    return (sent == len);
@@ -218,7 +214,6 @@ void ReadSocketData()
       string chunk = CharArrayToString(buffer, 0, bytesRead, CP_UTF8);
       g_rxBuffer += chunk;
 
-      // Process complete lines (ndjson)
       int newlinePos = StringFind(g_rxBuffer, "\n");
       while(newlinePos >= 0)
       {
@@ -238,7 +233,7 @@ void ReadSocketData()
 }
 
 //+------------------------------------------------------------------+
-//| Simple JSON Field Parser Helper                                  |
+//| Simple JSON Field Parser Helpers                                 |
 //+------------------------------------------------------------------+
 string GetJsonString(const string json, const string key)
 {
@@ -257,7 +252,7 @@ double GetJsonNumber(const string json, const string key)
    int start = StringFind(json, needle);
    if(start == -1) return 0;
    start += StringLen(needle);
-   
+
    int len = StringLen(json);
    int end = start;
    while(end < len)
@@ -271,6 +266,141 @@ double GetJsonNumber(const string json, const string key)
    return StringToDouble(StringSubstr(json, start, end - start));
 }
 
+string JsonEscape(const string s)
+{
+   string r = s;
+   StringReplace(r, "\\", "\\\\");
+   StringReplace(r, "\"", "\\\"");
+   return r;
+}
+
+//+------------------------------------------------------------------+
+//| ===================== SYMBOL RESOLUTION ======================== |
+//+------------------------------------------------------------------+
+bool IsGoldName(const string s)
+{
+   string up = s;
+   StringToUpper(up);
+   return (StringFind(up, "XAU") == 0 || StringFind(up, "GOLD") == 0);
+}
+
+string LookupOverride(const string requested)
+{
+   if(InpSymbolOverride == "") return "";
+
+   string up = requested;
+   StringToUpper(up);
+
+   string pairs[];
+   int np = StringSplit(InpSymbolOverride, ';', pairs);
+   for(int i = 0; i < np; i++)
+   {
+      string kv[];
+      if(StringSplit(pairs[i], '=', kv) != 2) continue;
+      string key = kv[0];
+      string val = kv[1];
+      StringTrimLeft(key);  StringTrimRight(key);
+      StringTrimLeft(val);  StringTrimRight(val);
+
+      string keyUp = key;
+      StringToUpper(keyUp);
+
+      if(keyUp == up || (IsGoldName(requested) && IsGoldName(key)))
+         return val;
+   }
+   return "";
+}
+
+// Fail-safe symbol resolution: guarantees a real tradable symbol is returned
+string ResolveSymbol(const string requested)
+{
+   string req = requested;
+   StringTrimLeft(req);
+   StringTrimRight(req);
+   if(req == "") return _Symbol;
+
+   // 1. Explicit override if set by user
+   string overrideVal = LookupOverride(req);
+   if(overrideVal != "")
+   {
+      SymbolSelect(overrideVal, true);
+      PrintFormat("[ExecuTrade] Symbol override used: '%s' -> '%s'", req, overrideVal);
+      return overrideVal;
+   }
+
+   // 2. If signal is for Gold (XAUUSD / GOLD):
+   if(IsGoldName(req))
+   {
+      // If EA is attached to a Gold chart, the chart's symbol IS the exact broker symbol!
+      if(IsGoldName(_Symbol))
+      {
+         SymbolSelect(_Symbol, true);
+         return _Symbol;
+      }
+
+      // Check XM spot Gold symbols in order of priority (avoiding futures with dots)
+      string goldCandidates[] = {"GOLD", "GOLD#", "GOLDmicro", "XAUUSD", "XAUUSD#", "XAUUSD.m"};
+      for(int i = 0; i < ArraySize(goldCandidates); i++)
+      {
+         if(SymbolSelect(goldCandidates[i], true))
+         {
+            PrintFormat("[ExecuTrade] Gold resolved: '%s' -> '%s'", req, goldCandidates[i]);
+            return goldCandidates[i];
+         }
+      }
+   }
+
+   // 3. Direct match
+   if(SymbolSelect(req, true))
+      return req;
+
+   // 4. Fallback to active chart symbol
+   PrintFormat("[ExecuTrade] Symbol fallback to chart symbol: '%s' -> '%s'", req, _Symbol);
+   return _Symbol;
+}
+
+//+------------------------------------------------------------------+
+//| Lot normalisation to symbol step/min/max                         |
+//+------------------------------------------------------------------+
+double NormalizeLot(const string sym, double lot)
+{
+   double minLot = SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN);
+   double maxLot = SymbolInfoDouble(sym, SYMBOL_VOLUME_MAX);
+   double step   = SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP);
+   if(step <= 0.0) step = 0.01;
+
+   lot = MathFloor(lot / step + 1e-9) * step;
+   if(lot < minLot) lot = minLot;
+   if(lot > maxLot) lot = maxLot;
+
+   int d = 0;
+   while(d < 8 && MathAbs(step * MathPow(10, d) - MathRound(step * MathPow(10, d))) > 1e-9) d++;
+   return NormalizeDouble(lot, d);
+}
+
+//+------------------------------------------------------------------+
+//| Position helpers                                                 |
+//+------------------------------------------------------------------+
+ulong FindNewestPosition(const string symbol, const ulong magic)
+{
+   ulong best = 0;
+   long bestTime = 0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong t = PositionGetTicket(i);
+      if(t == 0) continue;
+      if(PositionGetString(POSITION_SYMBOL) != symbol) continue;
+      if((ulong)PositionGetInteger(POSITION_MAGIC) != magic) continue;
+      long tm = PositionGetInteger(POSITION_TIME_MSC);
+      if(best == 0 || tm >= bestTime)
+      {
+         best = t;
+         bestTime = tm;
+      }
+   }
+   return best;
+}
+
 //+------------------------------------------------------------------+
 //| Dispatch Parsed JSON Command from Node.js                        |
 //+------------------------------------------------------------------+
@@ -279,7 +409,6 @@ void ProcessCommandMessage(const string json)
    string action = GetJsonString(json, "action");
    if(action == "") return;
 
-   // 1. PING Heartbeat Response
    if(action == "PING")
    {
       g_lastHeartbeat = GetTickCount64();
@@ -289,21 +418,18 @@ void ProcessCommandMessage(const string json)
 
    string reqId = GetJsonString(json, "request_id");
 
-   // 2. ORDER_SEND Execution
    if(action == "ORDER_SEND")
    {
       ExecuteOrderSend(json, reqId);
       return;
    }
 
-   // 3. POSITION_CLOSE Execution
    if(action == "POSITION_CLOSE")
    {
       ExecutePositionClose(json, reqId);
       return;
    }
 
-   // 4. FLATTEN_ALL Execution
    if(action == "FLATTEN_ALL")
    {
       ExecuteFlattenAll(json, reqId);
@@ -329,7 +455,7 @@ void ExecuteOrderSend(const string json, const string reqId)
 {
    uint startTime = GetTickCount();
 
-   string symbol    = GetJsonString(json, "symbol");
+   string reqSymbol = GetJsonString(json, "symbol");
    string tradeType = GetJsonString(json, "trade_type");
    double lot       = GetJsonNumber(json, "lot");
    double sl        = GetJsonNumber(json, "sl");
@@ -337,9 +463,21 @@ void ExecuteOrderSend(const string json, const string reqId)
    ulong  magic     = (ulong)GetJsonNumber(json, "magic");
    if(magic == 0) magic = InpDefaultMagic;
 
-   if(!SymbolSelect(symbol, true))
+   string symbol = ResolveSymbol(reqSymbol);
+
+   if(tradeType != "BUY" && tradeType != "SELL")
    {
-      SendSocketMessage(StringFormat("{\"event\":\"ORDER_RESULT\",\"request_id\":\"%s\",\"status\":\"FAILED\",\"retcode\":10014,\"message\":\"Symbol %s not found\"}", reqId, symbol));
+      SendSocketMessage(StringFormat(
+         "{\"event\":\"ORDER_RESULT\",\"request_id\":\"%s\",\"status\":\"FAILED\",\"retcode\":0,\"message\":\"Invalid trade_type '%s'\"}",
+         reqId, JsonEscape(tradeType)));
+      return;
+   }
+
+   lot = NormalizeLot(symbol, lot);
+   if(lot <= 0.0)
+   {
+      SendSocketMessage(StringFormat(
+         "{\"event\":\"ORDER_RESULT\",\"request_id\":\"%s\",\"status\":\"FAILED\",\"retcode\":10014,\"message\":\"Invalid volume\"}", reqId));
       return;
    }
 
@@ -348,74 +486,133 @@ void ExecuteOrderSend(const string json, const string reqId)
 
    bool success = false;
    if(tradeType == "BUY")
-   {
-      // Open with sl=0, tp=0 first to guarantee fill on ECN/Market accounts
       success = g_trade.Buy(lot, symbol, 0.0, 0.0, 0.0, "ExecuTrade_TV");
-   }
-   else if(tradeType == "SELL")
-   {
+   else
       success = g_trade.Sell(lot, symbol, 0.0, 0.0, 0.0, "ExecuTrade_TV");
-   }
 
-   uint latency = GetTickCount() - startTime;
-   uint retcode = g_trade.ResultRetcode();
+   uint retcode      = g_trade.ResultRetcode();
    ulong orderTicket = g_trade.ResultOrder();
    ulong dealTicket  = g_trade.ResultDeal();
    double price      = g_trade.ResultPrice();
 
    if(success && (retcode == 10009 || retcode == 10008))
    {
-      // Stage 2: Modify SL/TP if provided
-      if(sl > 0.0 || tp > 0.0)
+      ulong posTicket = 0;
+      if(dealTicket > 0 && HistoryDealSelect(dealTicket))
+         posTicket = (ulong)HistoryDealGetInteger(dealTicket, DEAL_POSITION_ID);
+      if(posTicket == 0 || !PositionSelectByTicket(posTicket))
       {
-         // Wait up to 50ms for position to register
-         Sleep(10);
-         if(PositionSelectByTicket(orderTicket))
-         {
-            g_trade.PositionModify(orderTicket, sl, tp);
-         }
+         ulong found = FindNewestPosition(symbol, magic);
+         if(found > 0) posTicket = found;
+      }
+      if(posTicket == 0) posTicket = orderTicket;
+
+      if((sl > 0.0 || tp > 0.0) && PositionSelectByTicket(posTicket))
+      {
+         int digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
+         g_trade.PositionModify(posTicket,
+                                sl > 0.0 ? NormalizeDouble(sl, digits) : 0.0,
+                                tp > 0.0 ? NormalizeDouble(tp, digits) : 0.0);
       }
 
+      uint latency = GetTickCount() - startTime;
       string reply = StringFormat(
-         "{\"event\":\"ORDER_RESULT\",\"request_id\":\"%s\",\"status\":\"EXECUTED\",\"retcode\":%u,\"order_ticket\":%I64u,\"deal_ticket\":%I64u,\"position_ticket\":%I64u,\"executed_price\":%.5f,\"latency_ms\":%u}",
-         reqId, retcode, orderTicket, dealTicket, orderTicket, price, latency
+         "{\"event\":\"ORDER_RESULT\",\"request_id\":\"%s\",\"status\":\"EXECUTED\",\"retcode\":%u,\"order_ticket\":%I64u,\"deal_ticket\":%I64u,\"position_ticket\":%I64u,\"executed_price\":%.5f,\"symbol\":\"%s\",\"lot\":%.2f,\"latency_ms\":%u}",
+         reqId, retcode, orderTicket, dealTicket, posTicket, price, JsonEscape(symbol), lot, latency
       );
       SendSocketMessage(reply);
    }
    else
    {
+      uint latency = GetTickCount() - startTime;
       string errDesc = g_trade.ResultRetcodeDescription();
       string reply = StringFormat(
-         "{\"event\":\"ORDER_RESULT\",\"request_id\":\"%s\",\"status\":\"FAILED\",\"retcode\":%u,\"message\":\"%s\",\"latency_ms\":%u}",
-         reqId, retcode, errDesc, latency
+         "{\"event\":\"ORDER_RESULT\",\"request_id\":\"%s\",\"status\":\"FAILED\",\"retcode\":%u,\"message\":\"%s\",\"symbol\":\"%s\",\"latency_ms\":%u}",
+         reqId, retcode, JsonEscape(errDesc), JsonEscape(symbol), latency
       );
       SendSocketMessage(reply);
    }
 }
 
 //+------------------------------------------------------------------+
-//| Execute Position Close by Ticket                                 |
+//| Close one position by ticket                                     |
+//+------------------------------------------------------------------+
+bool ClosePositionTicket(const ulong ticket, uint &retcodeOut)
+{
+   retcodeOut = 0;
+   if(!PositionSelectByTicket(ticket)) return false;
+
+   string sym = PositionGetString(POSITION_SYMBOL);
+   g_trade.SetTypeFilling(GetSymbolFillingMode(sym));
+
+   bool ok = g_trade.PositionClose(ticket);
+   retcodeOut = g_trade.ResultRetcode();
+   return (ok && (retcodeOut == 10009 || retcodeOut == 10008));
+}
+
+//+------------------------------------------------------------------+
+//| Execute Position Close (idempotent)                              |
 //+------------------------------------------------------------------+
 void ExecutePositionClose(const string json, const string reqId)
 {
-   ulong ticket = (ulong)GetJsonNumber(json, "position_ticket");
-   if(ticket <= 0)
+   ulong  ticket    = (ulong)GetJsonNumber(json, "position_ticket");
+   string reqSymbol = GetJsonString(json, "symbol");
+   ulong  magic     = (ulong)GetJsonNumber(json, "magic");
+   if(magic == 0) magic = InpDefaultMagic;
+
+   int  closed = 0, failed = 0;
+   uint lastRet = 0;
+   ulong lastTicket = ticket;
+
+   // 1. Try exact ticket if valid
+   if(ticket > 0 && PositionSelectByTicket(ticket))
    {
-      SendSocketMessage(StringFormat("{\"event\":\"CLOSE_RESULT\",\"request_id\":\"%s\",\"status\":\"FAILED\",\"message\":\"Invalid ticket\"}", reqId));
-      return;
+      uint rc = 0;
+      if(ClosePositionTicket(ticket, rc)) closed++; else failed++;
+      lastRet = rc;
+   }
+   // 2. Fallback: match by symbol + magic
+   else if(reqSymbol != "")
+   {
+      string symbol = ResolveSymbol(reqSymbol);
+      if(symbol != "")
+      {
+         for(int i = PositionsTotal() - 1; i >= 0; i--)
+         {
+            ulong t = PositionGetTicket(i);
+            if(t == 0) continue;
+            if(PositionGetString(POSITION_SYMBOL) != symbol) continue;
+            if((ulong)PositionGetInteger(POSITION_MAGIC) != magic) continue;
+
+            uint rc = 0;
+            if(ClosePositionTicket(t, rc)) closed++; else failed++;
+            lastRet = rc;
+            lastTicket = t;
+         }
+      }
    }
 
-   bool closed = g_trade.PositionClose(ticket);
-   uint retcode = g_trade.ResultRetcode();
-
-   if(closed && retcode == 10009)
+   string status;
+   string message;
+   if(closed == 0 && failed == 0)
    {
-      SendSocketMessage(StringFormat("{\"event\":\"CLOSE_RESULT\",\"request_id\":\"%s\",\"status\":\"EXECUTED\",\"position_ticket\":%I64u,\"retcode\":%u}", reqId, ticket, retcode));
+      status  = "NO_POSITION";
+      message = "No open position found (already closed or never opened)";
+   }
+   else if(failed == 0)
+   {
+      status  = "EXECUTED";
+      message = "Closed successfully";
    }
    else
    {
-      SendSocketMessage(StringFormat("{\"event\":\"CLOSE_RESULT\",\"request_id\":\"%s\",\"status\":\"FAILED\",\"position_ticket\":%I64u,\"retcode\":%u,\"message\":\"%s\"}", reqId, ticket, retcode, g_trade.ResultRetcodeDescription()));
+      status  = "FAILED";
+      message = g_trade.ResultRetcodeDescription();
    }
+
+   SendSocketMessage(StringFormat(
+      "{\"event\":\"CLOSE_RESULT\",\"request_id\":\"%s\",\"status\":\"%s\",\"position_ticket\":%I64u,\"closed\":%d,\"failed\":%d,\"retcode\":%u,\"message\":\"%s\"}",
+      reqId, status, lastTicket, closed, failed, lastRet, JsonEscape(message)));
 }
 
 //+------------------------------------------------------------------+
@@ -423,18 +620,16 @@ void ExecutePositionClose(const string json, const string reqId)
 //+------------------------------------------------------------------+
 void ExecuteFlattenAll(const string json, const string reqId)
 {
-   int total = PositionsTotal();
    int closedCount = 0;
 
-   for(int i = total - 1; i >= 0; i--)
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
    {
       ulong ticket = PositionGetTicket(i);
       if(ticket > 0)
       {
-         if(g_trade.PositionClose(ticket))
-         {
+         uint rc = 0;
+         if(ClosePositionTicket(ticket, rc))
             closedCount++;
-         }
       }
    }
 
@@ -442,18 +637,17 @@ void ExecuteFlattenAll(const string json, const string reqId)
 }
 
 //+------------------------------------------------------------------+
-//| Listen for Trade Transactions & Ticket Mutations                 |
+//| Listen for Trade Transactions                                    |
 //+------------------------------------------------------------------+
 void OnTradeTransaction(const MqlTradeTransaction& trans,
                         const MqlTradeRequest& req,
                         const MqlTradeResult& res)
 {
-   // Capture Deal Additions to track position ticket mapping
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD)
    {
       string payload = StringFormat(
          "{\"event\":\"DEAL_UPDATE\",\"deal_ticket\":%I64u,\"order_ticket\":%I64u,\"position_ticket\":%I64u,\"symbol\":\"%s\",\"price\":%.5f,\"volume\":%.2f}",
-         trans.deal, trans.order, trans.position, trans.symbol, trans.price, trans.volume
+         trans.deal, trans.order, trans.position, JsonEscape(trans.symbol), trans.price, trans.volume
       );
       SendSocketMessage(payload);
    }
@@ -490,7 +684,7 @@ void SendAccountSync()
          if(count > 0) posJson += ",";
          posJson += StringFormat(
             "{\"ticket\":%I64u,\"symbol\":\"%s\",\"type\":\"%s\",\"lot\":%.2f,\"open_price\":%.5f,\"current_price\":%.5f,\"pnl\":%.2f,\"magic\":%d,\"comment\":\"%s\"}",
-            ticket, sym, (type == POSITION_TYPE_BUY ? "BUY" : "SELL"), lot, openP, currP, pnl, (int)magic, comm
+            ticket, JsonEscape(sym), (type == POSITION_TYPE_BUY ? "BUY" : "SELL"), lot, openP, currP, pnl, (int)magic, JsonEscape(comm)
          );
          count++;
       }
@@ -506,34 +700,48 @@ void SendAccountSync()
 }
 
 //+------------------------------------------------------------------+
-//| Send MarketWatch Specifications Handshake                        |
+//| Build Spec JSON                                                  |
+//+------------------------------------------------------------------+
+string BuildSpecJson(const string sym, const string canonical)
+{
+   int digits       = (int)SymbolInfoInteger(sym, SYMBOL_DIGITS);
+   double point     = SymbolInfoDouble(sym, SYMBOL_POINT);
+   int spread       = (int)SymbolInfoInteger(sym, SYMBOL_SPREAD);
+   int stopsLevel   = (int)SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL);
+   double lotMin    = SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN);
+   double lotMax    = SymbolInfoDouble(sym, SYMBOL_VOLUME_MAX);
+   double lotStep   = SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP);
+   double contract  = SymbolInfoDouble(sym, SYMBOL_TRADE_CONTRACT_SIZE);
+   long exeMode     = SymbolInfoInteger(sym, SYMBOL_TRADE_EXEMODE);
+
+   return StringFormat(
+      "{\"symbol\":\"%s\",\"canonical\":\"%s\",\"digits\":%d,\"point\":%.6f,\"spread\":%d,\"stops_level\":%d,\"lot_min\":%.2f,\"lot_max\":%.2f,\"lot_step\":%.2f,\"contract_size\":%.0f,\"execution_mode\":%d}",
+      JsonEscape(sym), canonical, digits, point, spread, stopsLevel, lotMin, lotMax, lotStep, contract, (int)exeMode
+   );
+}
+
+//+------------------------------------------------------------------+
+//| Send Specifications Handshake                                    |
 //+------------------------------------------------------------------+
 void SendBrokerSpecsSync()
 {
-   int total = SymbolsTotal(true); // MarketWatch symbols
    string specsJson = "[";
    int count = 0;
 
+   // 1. Send the active chart symbol first
+   specsJson += BuildSpecJson(_Symbol, "XAUUSD");
+   count++;
+
+   // 2. Add other Market Watch symbols
+   int total = SymbolsTotal(true);
    for(int i = 0; i < total && count < 50; i++)
    {
       string sym = SymbolName(i, true);
-      if(sym == "") continue;
+      if(sym == "" || sym == _Symbol) continue;
+      if(StringFind(sym, ".") >= 0) continue; // Skip dot artifacts
 
-      int digits       = (int)SymbolInfoInteger(sym, SYMBOL_DIGITS);
-      double point     = SymbolInfoDouble(sym, SYMBOL_POINT);
-      int spread       = (int)SymbolInfoInteger(sym, SYMBOL_SPREAD);
-      int stopsLevel   = (int)SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL);
-      double lotMin    = SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN);
-      double lotMax    = SymbolInfoDouble(sym, SYMBOL_VOLUME_MAX);
-      double lotStep   = SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP);
-      double contract  = SymbolInfoDouble(sym, SYMBOL_TRADE_CONTRACT_SIZE);
-      long exeMode     = SymbolInfoInteger(sym, SYMBOL_TRADE_EXEMODE);
-
-      if(count > 0) specsJson += ",";
-      specsJson += StringFormat(
-         "{\"symbol\":\"%s\",\"digits\":%d,\"point\":%.6f,\"spread\":%d,\"stops_level\":%d,\"lot_min\":%.2f,\"lot_max\":%.2f,\"lot_step\":%.2f,\"contract_size\":%.0f,\"execution_mode\":%d}",
-         sym, digits, point, spread, stopsLevel, lotMin, lotMax, lotStep, contract, (int)exeMode
-      );
+      specsJson += ",";
+      specsJson += BuildSpecJson(sym, sym);
       count++;
    }
    specsJson += "]";
@@ -541,4 +749,3 @@ void SendBrokerSpecsSync()
    string msg = "{\"event\":\"SPECS_SYNC\",\"specs\":" + specsJson + "}";
    SendSocketMessage(msg);
 }
-

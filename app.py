@@ -130,7 +130,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(
-    title="ExecuTrade",
+    title="TI AUTOPILOT",
     version="1.0.0",
     description="Automated Trading Execution Platform | TradingView to MT5",
     lifespan=lifespan
@@ -181,7 +181,7 @@ def home():
     if dashboard_file.exists():
         return FileResponse(dashboard_file)
     return {
-        "message": "ExecuTrade Bridge is running!",
+        "message": "TI AUTOPILOT Bridge is running!",
         "status": "ONLINE",
         "dashboard": "/dashboard"
     }

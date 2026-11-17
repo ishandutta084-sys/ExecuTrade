@@ -3,35 +3,35 @@
 @tailwind utilities;
 
 :root {
-  --bg-canvas: #F4F0E8;
-  --bg-surface: #FBF9F4;
-  --bg-raised: #EDE7DC;
-  --border-hairline: rgba(27, 26, 24, 0.08);
-  --border-strong: rgba(27, 26, 24, 0.16);
-  --text-primary: #1B1A18;
-  --text-secondary: #6B655B;
-  --text-tertiary: #948E84;
-  --brand-brass: #A67D24;
-  --brand-brass-hover: #8E6819;
-  --status-buy: #3B7E55;
-  --status-sell: #A83B32;
-  --status-pending: #A8761E;
+  --bg-canvas: #FFFFFF;
+  --bg-surface: #FFFFFF;
+  --bg-raised: #F1F4FA;
+  --border-hairline: #E1E7F0;
+  --border-strong: #CBD5E1;
+  --text-primary: #0D1B3E;
+  --text-secondary: #3B4E76;
+  --text-tertiary: #6C7F9E;
+  --brand-brass: #EA7A24;
+  --brand-brass-hover: #D66A17;
+  --status-buy: #16A34A;
+  --status-sell: #DC2626;
+  --status-pending: #EA7A24;
 }
 
 .dark {
-  --bg-canvas: #121110;
-  --bg-surface: #181716;
-  --bg-raised: #1F1D1B;
-  --border-hairline: rgba(255, 244, 230, 0.08);
-  --border-strong: rgba(255, 244, 230, 0.16);
-  --text-primary: #EDE8E0;
-  --text-secondary: #A39D93;
-  --text-tertiary: #6F6A62;
-  --brand-brass: #C9A24B;
-  --brand-brass-hover: #B8923C;
-  --status-buy: #6FB58A;
-  --status-sell: #D0645A;
-  --status-pending: #D9A441;
+  --bg-canvas: #080F1E;
+  --bg-surface: #0E1B38;
+  --bg-raised: #15264C;
+  --border-hairline: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --text-primary: #FFFFFF;
+  --text-secondary: #94A6C4;
+  --text-tertiary: #5C7299;
+  --brand-brass: #EA7A24;
+  --brand-brass-hover: #F28D35;
+  --status-buy: #22C55E;
+  --status-sell: #EF4444;
+  --status-pending: #EA7A24;
 }
 
 @layer base {

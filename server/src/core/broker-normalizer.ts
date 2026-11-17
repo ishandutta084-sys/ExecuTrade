@@ -31,22 +31,31 @@ class BrokerNormalizer {
   public resolveSymbol(tvSymbol: string): string {
     const clean = tvSymbol.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
+    // Normalize Gold: XM Standard accounts trade Gold as "GOLD"
+    const isGold = clean === 'XAUUSD' || clean === 'GOLD';
+    if (isGold) {
+      if (this.specs.has('GOLD#')) return 'GOLD#';
+      return 'GOLD';
+    }
+
     // 1. Direct match
     if (this.specs.has(clean)) return clean;
 
-    // 2. Check with common suffixes: .m, _raw, +, .pro, .ecn
     const candidateKeys = Array.from(this.specs.keys());
-    const matched = candidateKeys.find(k => 
-      k === clean || 
-      k.startsWith(clean + '.') || 
-      k.startsWith(clean + '_') || 
-      k.startsWith(clean + '+') ||
-      k.replace(/[^A-Z0-9]/g, '') === clean
+
+    // 2. Check with common suffixes: .m, _raw, +, .pro, .ecn, #
+    const matched = candidateKeys.find(
+      (k) =>
+        k === clean ||
+        k.startsWith(clean + '.') ||
+        k.startsWith(clean + '_') ||
+        k.startsWith(clean + '+') ||
+        k.startsWith(clean + '#') ||
+        k.replace(/[^A-Z0-9]/g, '') === clean
     );
 
     if (matched) return matched;
 
-    // Fallback if no specs cached yet (e.g. before MT5 EA connects)
     return clean;
   }
 

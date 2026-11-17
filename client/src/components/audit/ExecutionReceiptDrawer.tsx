@@ -279,7 +279,7 @@ export const ExecutionReceiptDrawer: React.FC<ExecutionReceiptDrawerProps> = ({
         {/* Signature Flourish: Perforated Tear-off Ticket Border */}
         <div className="p-4 bg-raised border-t border-hairline perforated-ticket-bottom mt-4">
           <div className="flex items-center justify-between text-[11px] font-mono text-tertiary">
-            <span>ExecuTrade Blotter Receipt</span>
+            <span>TI AUTOPILOT Blotter Receipt</span>
             <span>END OF TICKET</span>
           </div>
         </div>

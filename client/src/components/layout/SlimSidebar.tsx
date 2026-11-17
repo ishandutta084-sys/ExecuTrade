@@ -12,10 +12,14 @@ export const SlimSidebar: React.FC<SlimSidebarProps> = ({ activeTab, setActiveTa
       {/* Top Brand Monogram */}
       <div className="flex flex-col items-center gap-4">
         <div
-          title="ExecuTrade Blotter"
-          className="w-7 h-7 rounded-control border border-hairline flex items-center justify-center bg-raised text-brass font-mono font-semibold text-xs tracking-tighter transition-colors"
+          title="TI AUTOPILOT Blotter"
+          className="w-8 h-8 rounded-control border border-hairline flex items-center justify-center bg-white p-0.5 shadow-sm transition-colors"
         >
-          ET
+          <img
+            src="/logo.png"
+            alt="TI AUTOPILOT"
+            className="w-full h-full object-contain"
+          />
         </div>
 
         {/* Navigation Rail */}

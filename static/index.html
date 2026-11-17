@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ExecuTrade | Automated Bridge Console</title>
+  <title>TI AUTOPILOT | Automated Trading Console</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/static/favicon.png" />
+  <link rel="shortcut icon" href="/static/favicon.ico" />
 
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -108,21 +112,17 @@
     <!-- ---------------------------------------------------- -->
     <aside class="w-16 shrink-0 h-full flex flex-col items-center justify-between py-4 bg-white dark:bg-[#0B0F19] border-r border-slate-200 dark:border-slate-800/80 z-30 transition-colors">
       
-      <!-- Top: Elegant Minimalist 'ET' Monogram Brand Badge -->
+      <!-- Top: TI AUTOPILOT Brand Badge -->
       <div class="flex flex-col items-center gap-6 w-full">
         
-        <a href="/dashboard" title="ExecuTrade Bridge Console" class="group relative flex items-center justify-center">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-900 to-slate-950 dark:from-[#0E1422] dark:to-[#080C14] p-[1.5px] border border-emerald-400 shadow-glow-emerald group-hover:scale-105 transition-transform duration-200">
-            <div class="w-full h-full rounded-[10px] bg-slate-950 flex items-center justify-center">
-              <span class="font-mono font-black text-sm text-white tracking-tighter flex items-center">
-                ET<span class="text-emerald-400 text-xs ml-0.5 animate-pulse">.</span>
-              </span>
-            </div>
+        <a href="/dashboard" title="TI AUTOPILOT Console" class="group relative flex items-center justify-center">
+          <div class="w-10 h-10 rounded-xl bg-white p-1 border border-slate-200 shadow-sm group-hover:scale-105 transition-transform duration-200 flex items-center justify-center">
+            <img src="/static/logo.png" alt="TI AUTOPILOT Logo" class="w-full h-full object-contain" />
           </div>
           <!-- Pulse Dot -->
           <span class="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-white dark:border-slate-950"></span>
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500 border border-white"></span>
           </span>
         </a>
 
@@ -181,8 +181,8 @@
         
         <!-- Left: Brand Title & Breadcrumb -->
         <div class="flex items-center gap-2 shrink-0">
-          <h1 class="text-base font-bold text-slate-900 dark:text-white font-mono tracking-tight">ExecuTrade</h1>
-          <span class="text-xs text-slate-500 font-mono">/ Console</span>
+          <h1 class="text-base font-bold text-slate-900 font-sans tracking-tight">TI AUTOPILOT</h1>
+          <span class="text-xs text-slate-400 font-mono">/ Console</span>
         </div>
 
         <!-- Center: Global Search Input -->
@@ -243,17 +243,6 @@
             </div>
           </div>
 
-          <!-- Theme Toggle Switch (Sun / Moon) -->
-          <button 
-            id="theme-toggle-btn"
-            onclick="toggleTheme()" 
-            class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition"
-            title="Toggle Light / Dark Mode"
-          >
-            <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
-            <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-slate-600"></i>
-          </button>
-
           <!-- Divider -->
           <div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
 
@@ -301,76 +290,108 @@
           <!-- ================================================== -->
           <!-- EXECUTIVE OPERATIONAL TELEMETRY GRID (4-Card Matrix) -->
           <!-- ================================================== -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <!-- ================================================== -->
+          <!-- PORTFOLIO PERFORMANCE & EQUITY CURVE (Hero Section)-->
+          <!-- ================================================== -->
+          <div class="bg-white dark:bg-[#0E1422] border border-slate-200 dark:border-slate-800/90 rounded-2xl shadow-sm overflow-hidden transition-colors">
+            <!-- Hero Top Header -->
+            <div class="p-5 pb-3 border-b border-slate-100 dark:border-slate-800/80 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-[10px] uppercase font-mono font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="trending-up" class="w-3.5 h-3.5 text-[#EA7A24]"></i>
+                    Portfolio Performance & Equity Curve
+                  </span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <span class="relative flex h-1.5 w-1.5">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                    </span>
+                    LIVE MT5
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-3">
+                  <span id="hero-equity-display" class="text-3xl lg:text-4xl font-extrabold tracking-tight font-mono text-slate-900 dark:text-white">$629.82</span>
+                  <div class="flex items-center text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 mr-0.5"></i>
+                    +$2.18 (+0.35%)
+                  </div>
+                  <span id="hero-floating-pnl" class="text-xs font-mono font-medium text-slate-500">Floating: $0.00</span>
+                </div>
+              </div>
 
-            <!-- Card 1: Bridge State -->
-            <div class="bg-white dark:bg-[#0E1422] border border-slate-200 dark:border-slate-800/90 rounded-2xl p-4 shadow-sm relative overflow-hidden transition-colors">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] uppercase font-mono font-bold text-slate-400 tracking-wider">Bridge State</span>
-                <span class="relative flex h-2.5 w-2.5">
-                  <span id="bridge-heartbeat-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span id="bridge-heartbeat-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                </span>
-              </div>
-              <div class="flex items-baseline gap-2">
-                <span id="stat-bridge-state" class="text-base font-bold font-mono text-emerald-500 tracking-tight">RUNNING</span>
-                <span id="stat-bridge-uptime" class="text-[10px] font-mono text-slate-400">99.98% / 14d</span>
-              </div>
-              <div class="mt-2 text-[10px] font-mono text-slate-500 flex items-center gap-1.5 truncate">
-                <i data-lucide="cpu" class="w-3 h-3 text-emerald-500 shrink-0"></i>
-                <span class="truncate">FastAPI & SQLite Engine</span>
+              <!-- Timeframe & Legend -->
+              <div class="flex items-center gap-3">
+                <div class="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium">
+                  <button class="px-3 py-1 rounded bg-[#EA7A24] text-white font-semibold shadow-xs">1D</button>
+                  <button class="px-3 py-1 rounded text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">1W</button>
+                  <button class="px-3 py-1 rounded text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">1M</button>
+                  <button class="px-3 py-1 rounded text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">ALL</button>
+                </div>
+                <div class="hidden sm:flex items-center gap-3 text-xs font-mono text-slate-500 border-l border-slate-200 dark:border-slate-800 pl-3">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-1 bg-[#EA7A24] rounded-full"></span>
+                    <span class="text-slate-900 dark:text-white font-medium">Equity</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-0.5 border-b border-dashed border-blue-400"></span>
+                    <span>Balance</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- Card 2: Today's Executions -->
-            <div class="bg-white dark:bg-[#0E1422] border border-slate-200 dark:border-slate-800/90 rounded-2xl p-4 shadow-sm transition-colors">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] uppercase font-mono font-bold text-slate-400 tracking-wider">Today's Trades</span>
-                <i data-lucide="zap" class="w-3.5 h-3.5 text-emerald-500"></i>
+            <!-- Secondary Metrics Bar -->
+            <div class="px-5 py-2.5 bg-slate-50 dark:bg-[#0B101D] border-b border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-y-2 gap-x-4 text-xs font-mono text-slate-500">
+              <div class="flex flex-wrap items-center gap-x-5 gap-y-1">
+                <div>Realized Balance: <span id="hero-balance-val" class="font-semibold text-slate-900 dark:text-white">$629.82</span></div>
+                <div>Peak (HWM): <span class="font-semibold text-slate-900 dark:text-white">$629.82</span></div>
+                <div>Max Drawdown: <span class="font-semibold text-slate-900 dark:text-white">0.00%</span></div>
               </div>
-              <div class="flex items-baseline gap-2">
-                <span id="stat-today-trades" class="text-base font-bold font-mono text-slate-900 dark:text-white">0</span>
-                <span id="stat-fill-ratio" class="text-[10px] font-mono text-emerald-500 font-semibold">100% Fill</span>
-              </div>
-              <div class="mt-2 text-[10px] font-mono text-slate-500 flex items-center justify-between">
-                <span>Avg Latency:</span>
-                <span id="stat-avg-latency" class="font-bold text-slate-700 dark:text-slate-300">142 ms</span>
-              </div>
-            </div>
-
-            <!-- Card 3: Queue Health -->
-            <div class="bg-white dark:bg-[#0E1422] border border-slate-200 dark:border-slate-800/90 rounded-2xl p-4 shadow-sm transition-colors">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] uppercase font-mono font-bold text-slate-400 tracking-wider">Queue Health</span>
-                <i data-lucide="layers" class="w-3.5 h-3.5 text-amber-500"></i>
-              </div>
-              <div class="flex items-baseline gap-1.5">
-                <span id="stat-pending-count" class="text-base font-bold font-mono text-amber-500">0</span>
-                <span class="text-[10px] font-mono text-slate-400">pending</span>
-                <span class="text-[10px] font-mono text-rose-500 font-semibold ml-auto" id="stat-failed-count">0 failed</span>
-              </div>
-              <div class="mt-2 text-[10px] font-mono text-slate-500 flex items-center gap-1">
-                <i data-lucide="clock" class="w-3 h-3 text-slate-400 shrink-0"></i>
-                <span id="stat-last-poll-time" class="truncate">Updated 2s ago</span>
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+                <div>MT5 Account: <span class="font-semibold text-slate-900 dark:text-white">#450408614</span></div>
+                <div>Bridge: <span id="stat-bridge-state" class="font-semibold text-emerald-500">RUNNING</span></div>
+                <div>Today's Trades: <span id="stat-today-trades" class="font-semibold text-slate-900 dark:text-white">0</span> (<span id="stat-fill-ratio" class="text-emerald-500">100% Fill</span>)</div>
+                <div class="hidden md:inline">Latency: <span id="stat-avg-latency" class="font-semibold text-slate-700 dark:text-slate-300">142 ms</span></div>
+                <!-- Hidden anchors for JS compatibility -->
+                <span id="bridge-heartbeat-ping" class="hidden"></span>
+                <span id="bridge-heartbeat-dot" class="hidden"></span>
+                <span id="stat-bridge-uptime" class="hidden"></span>
+                <span id="stat-pending-count" class="hidden">0</span>
+                <span id="stat-failed-count" class="hidden">0 failed</span>
+                <span id="stat-last-poll-time" class="hidden"></span>
+                <span id="stat-active-pair-name" class="hidden"></span>
               </div>
             </div>
 
-            <!-- Card 4: Terminal Protocol Engine -->
-            <div class="bg-white dark:bg-[#0E1422] border border-slate-200 dark:border-slate-800/90 rounded-2xl p-4 shadow-sm transition-colors">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] uppercase font-mono font-bold text-slate-400 tracking-wider">Terminal Engine</span>
-                <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">MT5 EA</span>
-              </div>
-              <div class="flex items-baseline gap-2">
-                <span id="stat-active-pair-name" class="text-base font-bold font-mono text-slate-900 dark:text-white">FIFO Poller</span>
-                <span class="text-[10px] font-mono text-emerald-500 font-semibold">Active</span>
-              </div>
-              <div class="mt-2 text-[10px] font-mono text-slate-500 flex items-center justify-between">
-                <span>Protocol:</span>
-                <span class="font-bold text-slate-700 dark:text-slate-300 font-mono">SQLite WAL • WebRequest</span>
-              </div>
+            <!-- SVG Equity Chart Container -->
+            <div class="p-4 pt-2">
+              <svg viewBox="0 0 1000 220" class="w-full h-52 overflow-visible">
+                <defs>
+                  <linearGradient id="staticEquityGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#EA7A24" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="#EA7A24" stopOpacity="0.0" />
+                  </linearGradient>
+                </defs>
+                <line x1="60" y1="30" x2="970" y2="30" stroke="currentColor" stroke-opacity="0.07" stroke-dasharray="3 3" />
+                <line x1="60" y1="80" x2="970" y2="80" stroke="currentColor" stroke-opacity="0.07" stroke-dasharray="3 3" />
+                <line x1="60" y1="130" x2="970" y2="130" stroke="currentColor" stroke-opacity="0.07" stroke-dasharray="3 3" />
+                <line x1="60" y1="180" x2="970" y2="180" stroke="currentColor" stroke-opacity="0.07" />
+                <text x="50" y="34" text-anchor="end" class="text-[10px] font-mono fill-slate-400">$630.00</text>
+                <text x="50" y="84" text-anchor="end" class="text-[10px] font-mono fill-slate-400">$628.50</text>
+                <text x="50" y="134" text-anchor="end" class="text-[10px] font-mono fill-slate-400">$627.00</text>
+                <text x="50" y="184" text-anchor="end" class="text-[10px] font-mono fill-slate-400">$625.50</text>
+                <!-- Balance Realized Step Line -->
+                <path d="M 60 115 L 350 115 L 350 90 L 700 90 L 700 35 L 970 35" fill="none" stroke="#60A5FA" stroke-width="1.75" stroke-dasharray="4 3" opacity="0.85" />
+                <!-- Equity Gradient Area -->
+                <path d="M 60 115 C 200 115, 250 100, 350 90 C 450 80, 600 70, 700 35 C 800 35, 900 35, 970 35 L 970 180 L 60 180 Z" fill="url(#staticEquityGradient)" />
+                <!-- Equity Curve Line -->
+                <path d="M 60 115 C 200 115, 250 100, 350 90 C 450 80, 600 70, 700 35 C 800 35, 900 35, 970 35" fill="none" stroke="#EA7A24" stroke-width="2.5" stroke-linecap="round" />
+                <!-- Active dot -->
+                <circle cx="970" cy="35" r="5" fill="#EA7A24" stroke="#FFFFFF" stroke-width="2" />
+                <circle cx="970" cy="35" r="9" fill="#EA7A24" fill-opacity="0.25" class="animate-pulse" />
+              </svg>
             </div>
-
           </div>
 
           <!-- ACTION TOOLBAR (Directly below the cards) -->
@@ -747,14 +768,14 @@
     }
 
     function setupUserProfile(user) {
-      const email = user.email || 'admin@executrade.internal';
+      const email = user.email || 'admin@tiautopilot.internal';
       const emailEl = document.getElementById('user-email-display');
       const avatarEl = document.getElementById('user-avatar-initials');
 
       if (emailEl) emailEl.innerText = email;
       if (avatarEl) {
         const namePart = email.split('@')[0];
-        const initials = namePart.length >= 2 ? namePart.substring(0, 2).toUpperCase() : 'ET';
+        const initials = namePart.length >= 2 ? namePart.substring(0, 2).toUpperCase() : 'TI';
         avatarEl.innerText = initials;
       }
     }
@@ -798,22 +819,16 @@
     // 4. THEME ENGINE (persisted in localStorage.theme)
     // --------------------------------------------------------
     function applyTheme(theme) {
-      state.theme = theme;
-      localStorage.setItem('theme', theme);
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark');
-      }
+      state.theme = 'light';
+      localStorage.setItem('theme', 'light');
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
     }
 
     function toggleTheme() {
-      const next = state.theme === 'dark' ? 'light' : 'dark';
-      applyTheme(next);
+      applyTheme('light');
     }
-    applyTheme(state.theme);
+    applyTheme('light');
 
     // --------------------------------------------------------
     // 5. OPERATIONAL TELEMETRY & BRIDGE STATE MATRIX
