@@ -12,6 +12,7 @@ import { executionMutex } from '../core/execution-mutex.js';
 import { mt5TcpHub } from '../socket/mt5-tcp-hub.js';
 import { signalLedger } from '../services/signal-ledger.service.js';
 import { wsTelemetry } from '../services/ws-telemetry.service.js';
+import { tradeLedgerService } from '../services/trade-ledger.service.js';
 
 export async function handleTradingViewWebhook(req: FastifyRequest, reply: FastifyReply) {
   const startTime = Date.now();
@@ -138,6 +139,16 @@ async function processSignalInBackground(signal: TradingSignal, startTime: numbe
           if (active) {
             positionTracker.recordClosePosition(signal.strategy, signal.symbol, active.position_ticket);
           }
+
+          const currentAccount = mt5TcpHub.getAccountData();
+          tradeLedgerService.recordCloseTrade({
+            ticket: ticketToClose || Number(res.position_ticket || active?.position_ticket || 0),
+            close_price: res.executed_price || active?.open_price || 0,
+            equity: currentAccount?.equity || 629.82,
+            balance: currentAccount?.balance || 629.82,
+            comment: res.status === 'NO_POSITION' ? 'Position already closed (TP/SL hit)' : `TV Exit Signal: ${signal.strategy}`
+          });
+
           signalLedger.updateExecutionResult(signal.signal_id, 'EXECUTED', {
             position_ticket: ticketToClose || res.position_ticket,
             execution_message: res.status === 'NO_POSITION'
@@ -207,6 +218,21 @@ async function processSignalInBackground(signal: TradingSignal, startTime: numbe
           open_price: res.executed_price || 0,
           sl: clampedStops.sl,
           tp: clampedStops.tp
+        });
+
+        const currentAccount = mt5TcpHub.getAccountData();
+        tradeLedgerService.recordOpenTrade({
+          ticket: positionTicket,
+          strategy: signal.strategy,
+          symbol: signal.symbol,
+          action: signal.action,
+          lot,
+          open_price: res.executed_price || 0,
+          sl: clampedStops.sl,
+          tp: clampedStops.tp,
+          equity: currentAccount?.equity || 629.82,
+          balance: currentAccount?.balance || 629.82,
+          comment: `TV Webhook Order: ${signal.strategy}`
         });
 
         signalLedger.updateExecutionResult(signal.signal_id, 'EXECUTED', {

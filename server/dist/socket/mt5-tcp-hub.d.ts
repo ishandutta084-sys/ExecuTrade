@@ -50,6 +50,7 @@ declare class Mt5TcpHub {
     private heartbeatInterval;
     private latestAccountData;
     private onAccountSyncCallback;
+    private previousPositions;
     start(): void;
     private handleData;
     private processMessage;

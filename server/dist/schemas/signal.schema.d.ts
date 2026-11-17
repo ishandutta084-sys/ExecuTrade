@@ -15,11 +15,11 @@ export declare const TradingSignalSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     symbol: string;
     strategy: string;
-    signal_id: string;
     action: "BUY" | "SELL" | "CLOSE" | "EXIT" | "FLATTEN";
+    lot: number;
     sl: number;
     tp: number;
-    lot: number;
+    signal_id: string;
     deviation: number;
     price?: number | undefined;
     timestamp?: string | number | undefined;
@@ -30,10 +30,10 @@ export declare const TradingSignalSchema: z.ZodObject<{
     signal_id: string;
     strategy?: string | undefined;
     action?: unknown;
-    price?: number | undefined;
+    lot?: number | undefined;
     sl?: number | undefined;
     tp?: number | undefined;
-    lot?: number | undefined;
+    price?: number | undefined;
     timestamp?: string | number | undefined;
     secret?: string | undefined;
     deviation?: number | undefined;
@@ -51,18 +51,18 @@ export declare const TestSignalSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     symbol: string;
     strategy: string;
-    signal_id: string;
     action: "BUY" | "SELL";
+    lot: number;
     sl: number;
     tp: number;
-    lot: number;
+    signal_id: string;
 }, {
     symbol: string;
-    signal_id: string;
     action: "BUY" | "SELL";
+    signal_id: string;
     strategy?: string | undefined;
+    lot?: number | undefined;
     sl?: number | undefined;
     tp?: number | undefined;
-    lot?: number | undefined;
 }>;
 export type TestSignal = z.infer<typeof TestSignalSchema>;

@@ -105,6 +105,34 @@ export function initDatabase() {
 
     CREATE INDEX IF NOT EXISTS idx_equity_account_time ON equity_snapshots(account_number, timestamp);
     CREATE INDEX IF NOT EXISTS idx_equity_time ON equity_snapshots(timestamp);
+
+    CREATE TABLE IF NOT EXISTS trade_ledger (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket INTEGER UNIQUE NOT NULL,
+      strategy TEXT NOT NULL,
+      symbol TEXT NOT NULL,
+      action TEXT NOT NULL,
+      lot REAL NOT NULL,
+      open_price REAL NOT NULL,
+      close_price REAL,
+      sl REAL NOT NULL,
+      tp REAL NOT NULL,
+      profit_loss REAL DEFAULT 0.0,
+      profit_loss_pct REAL DEFAULT 0.0,
+      equity_after_trade REAL NOT NULL,
+      balance_after_trade REAL NOT NULL,
+      status TEXT DEFAULT 'OPEN',
+      open_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      close_time TIMESTAMP,
+      comment TEXT,
+      sync_status TEXT DEFAULT 'PENDING',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_ledger_ticket ON trade_ledger(ticket);
+    CREATE INDEX IF NOT EXISTS idx_ledger_status ON trade_ledger(status);
+    CREATE INDEX IF NOT EXISTS idx_ledger_close_time ON trade_ledger(close_time DESC);
   `);
 
   logger.info({ path: env.DB_PATH }, 'SQLite database initialized with built-in node:sqlite WAL mode');

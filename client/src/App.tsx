@@ -11,6 +11,7 @@ import { EquityHeroSection } from './components/telemetry/EquityHeroSection.js';
 import { EmergencyToolbar } from './components/telemetry/EmergencyToolbar.js';
 import { SignalsLedger } from './components/ledger/SignalsLedger.js';
 import { LivePositionsTable } from './components/ledger/LivePositionsTable.js';
+import { TradeLedgerView } from './components/ledger/TradeLedgerView.js';
 import { ExecutionReceiptDrawer } from './components/audit/ExecutionReceiptDrawer.js';
 import { ManualSignalModal } from './components/modals/ManualSignalModal.js';
 import { LoginPage } from './components/auth/LoginPage.js';
@@ -20,7 +21,7 @@ export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem('executrade_auth') !== null;
   });
-  const [activeTab, setActiveTab] = useState<'console' | 'positions'>('console');
+  const [activeTab, setActiveTab] = useState<'console' | 'positions' | 'ledger'>('console');
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
@@ -147,7 +148,7 @@ export function App() {
                 isLoading={isLoading}
               />
             </>
-          ) : (
+          ) : activeTab === 'positions' ? (
             /* Live MT5 Positions Tab */
             <LivePositionsTable
               positions={brokerPositions}
@@ -156,6 +157,9 @@ export function App() {
               equity={equity}
               freeMargin={freeMargin}
             />
+          ) : (
+            /* Audited Trade Ledger & Supabase Tab */
+            <TradeLedgerView />
           )}
         </main>
       </div>

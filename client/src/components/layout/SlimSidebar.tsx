@@ -1,9 +1,9 @@
 import React from 'react';
-import { Activity, Layers, BookOpen, Github } from 'lucide-react';
+import { Activity, Layers, FileSpreadsheet, FileCode, Github } from 'lucide-react';
 
 interface SlimSidebarProps {
-  activeTab: 'console' | 'positions';
-  setActiveTab: (tab: 'console' | 'positions') => void;
+  activeTab: 'console' | 'positions' | 'ledger';
+  setActiveTab: (tab: 'console' | 'positions' | 'ledger') => void;
 }
 
 export const SlimSidebar: React.FC<SlimSidebarProps> = ({ activeTab, setActiveTab }) => {
@@ -26,10 +26,10 @@ export const SlimSidebar: React.FC<SlimSidebarProps> = ({ activeTab, setActiveTa
         <nav className="flex flex-col items-center gap-1.5">
           <button
             onClick={() => setActiveTab('console')}
-            title="Execution Console"
+            title="Execution Console & Equity Curve"
             className={`w-9 h-9 rounded-control relative flex items-center justify-center transition-colors cursor-pointer ${
               activeTab === 'console'
-                ? 'text-primary bg-raised before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-brass'
+                ? 'text-primary bg-raised before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-brand'
                 : 'text-secondary hover:text-primary hover:bg-raised'
             }`}
           >
@@ -41,11 +41,23 @@ export const SlimSidebar: React.FC<SlimSidebarProps> = ({ activeTab, setActiveTa
             title="Live MT5 Positions"
             className={`w-9 h-9 rounded-control relative flex items-center justify-center transition-colors cursor-pointer ${
               activeTab === 'positions'
-                ? 'text-primary bg-raised before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-brass'
+                ? 'text-primary bg-raised before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-brand'
                 : 'text-secondary hover:text-primary hover:bg-raised'
             }`}
           >
             <Layers className="w-4 h-4" strokeWidth={1.5} />
+          </button>
+
+          <button
+            onClick={() => setActiveTab('ledger')}
+            title="Audited Trade Ledger & Supabase"
+            className={`w-9 h-9 rounded-control relative flex items-center justify-center transition-colors cursor-pointer ${
+              activeTab === 'ledger'
+                ? 'text-primary bg-raised before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-brand'
+                : 'text-secondary hover:text-primary hover:bg-raised'
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4" strokeWidth={1.5} />
           </button>
 
           <a
@@ -55,7 +67,7 @@ export const SlimSidebar: React.FC<SlimSidebarProps> = ({ activeTab, setActiveTa
             title="API Documentation (Swagger)"
             className="w-9 h-9 rounded-control flex items-center justify-center text-secondary hover:text-primary hover:bg-raised transition-colors"
           >
-            <BookOpen className="w-4 h-4" strokeWidth={1.5} />
+            <FileCode className="w-4 h-4" strokeWidth={1.5} />
           </a>
         </nav>
       </div>

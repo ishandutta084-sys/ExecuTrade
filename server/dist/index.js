@@ -13,6 +13,7 @@ import { getSignals, searchSignals, postTestSignal } from './controllers/signals
 import { getLivePositions, closeSpecificPosition } from './controllers/positions.controller.js';
 import { getBridgeStatus, togglePause, getAlerts, getEquityCurve } from './controllers/telemetry.controller.js';
 import { flattenAllPositions } from './controllers/emergency.controller.js';
+import { getTradesLedger, triggerSupabaseSync, getSupabaseConfig, updateSupabaseConfig } from './controllers/ledger.controller.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 async function bootstrap() {
@@ -83,6 +84,10 @@ async function bootstrap() {
     app.get('/api/equity-curve', getEquityCurve);
     app.post('/api/bridge/toggle-pause', togglePause);
     app.get('/api/alerts', getAlerts);
+    app.get('/api/ledger/trades', getTradesLedger);
+    app.post('/api/ledger/sync', triggerSupabaseSync);
+    app.get('/api/ledger/supabase-config', getSupabaseConfig);
+    app.post('/api/ledger/supabase-config', updateSupabaseConfig);
     app.post('/api/emergency/flatten-all', flattenAllPositions);
     // 4. Start HTTP Server & Attach WebSocket Telemetry Hub
     await app.listen({ port: env.PORT, host: env.HOST });

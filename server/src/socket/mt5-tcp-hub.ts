@@ -4,6 +4,7 @@ import { logger } from '../utils/logger.js';
 import { brokerNormalizer } from '../core/broker-normalizer.js';
 import { positionTracker } from '../core/position-tracker.js';
 import { equityHistoryService } from '../services/equity-history.service.js';
+import { tradeLedgerService } from '../services/trade-ledger.service.js';
 
 export interface OrderSendRequest {
   request_id: string;
@@ -63,6 +64,7 @@ class Mt5TcpHub {
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private latestAccountData: AccountSyncData | null = null;
   private onAccountSyncCallback: ((data: AccountSyncData) => void) | null = null;
+  private previousPositions = new Map<number, any>();
 
   public start() {
     this.server = net.createServer((socket) => {
@@ -158,6 +160,28 @@ class Mt5TcpHub {
     if (msg.event === 'ACCOUNT_SYNC') {
       this.latestAccountData = msg as AccountSyncData;
       equityHistoryService.recordSnapshot(this.latestAccountData);
+
+      // Detect any positions that just closed in MT5 (e.g. TP/SL hit)
+      if (Array.isArray(this.latestAccountData.open_positions)) {
+        const currentTickets = new Set(this.latestAccountData.open_positions.map(p => p.ticket));
+        for (const [ticket, prev] of this.previousPositions.entries()) {
+          if (!currentTickets.has(ticket)) {
+            tradeLedgerService.recordCloseTrade({
+              ticket,
+              close_price: prev.current_price || prev.open_price,
+              profit_loss: prev.pnl,
+              equity: this.latestAccountData.equity,
+              balance: this.latestAccountData.balance,
+              comment: 'MT5 Terminal Execution (TP/SL/Manual Exit)'
+            });
+          }
+        }
+        this.previousPositions.clear();
+        for (const p of this.latestAccountData.open_positions) {
+          this.previousPositions.set(p.ticket, p);
+        }
+      }
+
       if (this.onAccountSyncCallback) {
         this.onAccountSyncCallback(this.latestAccountData);
       }
