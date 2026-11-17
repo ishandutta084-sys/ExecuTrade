@@ -20,23 +20,6 @@ export const TradeAnalyticsView: React.FC = () => {
   const { analytics, isLoading, refreshAnalytics } = useTradeAnalytics();
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
 
-  if (!analytics) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 border border-hairline bg-surface rounded-panel gap-3">
-        <div className="flex items-center gap-2.5 text-xs font-mono text-brand">
-          <RefreshCw className="w-4 h-4 animate-spin" />
-          <span>Computing quantitative trading metrics...</span>
-        </div>
-        <button
-          onClick={refreshAnalytics}
-          className="px-3 py-1.5 rounded-control bg-raised border border-hairline text-xs font-mono text-primary hover:border-brass transition-colors cursor-pointer"
-        >
-          Retry Calculation
-        </button>
-      </div>
-    );
-  }
-
   const a = analytics;
 
   // Max absolute PnL for scaling Day of Month Bar Chart
@@ -66,10 +49,11 @@ export const TradeAnalyticsView: React.FC = () => {
 
           <button
             onClick={refreshAnalytics}
-            className="px-3 py-1.5 rounded-control text-xs font-mono font-medium border border-hairline bg-raised hover:bg-surface text-secondary hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer self-start sm:self-center shadow-xs"
+            disabled={isLoading}
+            className="px-3 py-1.5 rounded-control text-xs font-mono font-medium border border-hairline bg-raised hover:bg-surface text-secondary hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer self-start sm:self-center shadow-xs disabled:opacity-50"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-brand" />
-            <span>Recalculate</span>
+            <RefreshCw className={`w-3.5 h-3.5 text-brand ${isLoading ? 'animate-spin' : ''}`} />
+            <span>{isLoading ? 'Recalculating...' : 'Recalculate'}</span>
           </button>
         </div>
 
