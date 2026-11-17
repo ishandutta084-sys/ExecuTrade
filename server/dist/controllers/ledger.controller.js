@@ -1,4 +1,5 @@
 import { tradeLedgerService } from '../services/trade-ledger.service.js';
+import { analyticsService } from '../services/analytics.service.js';
 export async function getTradesLedger(req, reply) {
     const query = req.query;
     const limit = query.limit ? parseInt(query.limit, 10) : 100;
@@ -42,6 +43,13 @@ export async function updateSupabaseConfig(req, reply) {
         status: 'SUCCESS',
         message: 'Supabase configuration updated and synced',
         sync: syncResult
+    });
+}
+export async function getAnalyticsSummary(req, reply) {
+    const analytics = analyticsService.getAnalytics();
+    return reply.send({
+        status: 'SUCCESS',
+        analytics
     });
 }
 //# sourceMappingURL=ledger.controller.js.map

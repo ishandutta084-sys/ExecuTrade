@@ -12,6 +12,7 @@ import { EmergencyToolbar } from './components/telemetry/EmergencyToolbar.js';
 import { SignalsLedger } from './components/ledger/SignalsLedger.js';
 import { LivePositionsTable } from './components/ledger/LivePositionsTable.js';
 import { TradeLedgerView } from './components/ledger/TradeLedgerView.js';
+import { TradeAnalyticsView } from './components/analytics/TradeAnalyticsView.js';
 import { ExecutionReceiptDrawer } from './components/audit/ExecutionReceiptDrawer.js';
 import { ManualSignalModal } from './components/modals/ManualSignalModal.js';
 import { LoginPage } from './components/auth/LoginPage.js';
@@ -21,7 +22,7 @@ export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem('executrade_auth') !== null;
   });
-  const [activeTab, setActiveTab] = useState<'console' | 'positions' | 'ledger'>('console');
+  const [activeTab, setActiveTab] = useState<'console' | 'positions' | 'ledger' | 'analytics'>('console');
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
@@ -157,9 +158,12 @@ export function App() {
               equity={equity}
               freeMargin={freeMargin}
             />
-          ) : (
+          ) : activeTab === 'ledger' ? (
             /* Audited Trade Ledger & Supabase Tab */
             <TradeLedgerView />
+          ) : (
+            /* Quantitative Performance Analytics Tab */
+            <TradeAnalyticsView />
           )}
         </main>
       </div>

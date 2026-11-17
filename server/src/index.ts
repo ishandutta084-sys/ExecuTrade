@@ -13,7 +13,7 @@ import { getSignals, searchSignals, postTestSignal } from './controllers/signals
 import { getLivePositions, closeSpecificPosition } from './controllers/positions.controller.js';
 import { getBridgeStatus, togglePause, getAlerts, getEquityCurve } from './controllers/telemetry.controller.js';
 import { flattenAllPositions } from './controllers/emergency.controller.js';
-import { getTradesLedger, triggerSupabaseSync, getSupabaseConfig, updateSupabaseConfig } from './controllers/ledger.controller.js';
+import { getTradesLedger, triggerSupabaseSync, getSupabaseConfig, updateSupabaseConfig, getAnalyticsSummary } from './controllers/ledger.controller.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -98,6 +98,8 @@ async function bootstrap() {
   app.get('/api/alerts', getAlerts);
 
   app.get('/api/ledger/trades', getTradesLedger);
+  app.get('/api/ledger/analytics', getAnalyticsSummary);
+  app.get('/api/analytics/summary', getAnalyticsSummary);
   app.post('/api/ledger/sync', triggerSupabaseSync);
   app.get('/api/ledger/supabase-config', getSupabaseConfig);
   app.post('/api/ledger/supabase-config', updateSupabaseConfig);

@@ -1,9 +1,9 @@
 import React from 'react';
-import { Activity, Layers, FileSpreadsheet, FileCode, Github } from 'lucide-react';
+import { Activity, Layers, FileSpreadsheet, BarChart3, FileCode, Github } from 'lucide-react';
 
 interface SlimSidebarProps {
-  activeTab: 'console' | 'positions' | 'ledger';
-  setActiveTab: (tab: 'console' | 'positions' | 'ledger') => void;
+  activeTab: 'console' | 'positions' | 'ledger' | 'analytics';
+  setActiveTab: (tab: 'console' | 'positions' | 'ledger' | 'analytics') => void;
 }
 
 export const SlimSidebar: React.FC<SlimSidebarProps> = ({ activeTab, setActiveTab }) => {
@@ -58,6 +58,18 @@ export const SlimSidebar: React.FC<SlimSidebarProps> = ({ activeTab, setActiveTa
             }`}
           >
             <FileSpreadsheet className="w-4 h-4" strokeWidth={1.5} />
+          </button>
+
+          <button
+            onClick={() => setActiveTab('analytics')}
+            title="Performance Analytics & Quantitative Edge"
+            className={`w-9 h-9 rounded-control relative flex items-center justify-center transition-colors cursor-pointer ${
+              activeTab === 'analytics'
+                ? 'text-primary bg-raised before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-brand'
+                : 'text-secondary hover:text-primary hover:bg-raised'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" strokeWidth={1.5} />
           </button>
 
           <a

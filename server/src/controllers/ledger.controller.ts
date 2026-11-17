@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { tradeLedgerService } from '../services/trade-ledger.service.js';
+import { analyticsService } from '../services/analytics.service.js';
 
 export async function getTradesLedger(req: FastifyRequest, reply: FastifyReply) {
   const query = req.query as {
@@ -57,5 +58,13 @@ export async function updateSupabaseConfig(req: FastifyRequest, reply: FastifyRe
     status: 'SUCCESS',
     message: 'Supabase configuration updated and synced',
     sync: syncResult
+  });
+}
+
+export async function getAnalyticsSummary(req: FastifyRequest, reply: FastifyReply) {
+  const analytics = analyticsService.getAnalytics();
+  return reply.send({
+    status: 'SUCCESS',
+    analytics
   });
 }
