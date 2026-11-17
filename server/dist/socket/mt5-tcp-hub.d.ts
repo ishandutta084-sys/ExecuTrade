@@ -59,6 +59,7 @@ declare class Mt5TcpHub {
     isConnected(): boolean;
     getAccountData(): AccountSyncData | null;
     setAccountSyncCallback(cb: (data: AccountSyncData) => void): void;
+    onAccountSync(cb: (data: AccountSyncData) => void): void;
 }
 export declare const mt5TcpHub: Mt5TcpHub;
 export {};

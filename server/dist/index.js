@@ -9,7 +9,7 @@ import { initDatabase } from './config/database.js';
 import { mt5TcpHub } from './socket/mt5-tcp-hub.js';
 import { wsTelemetry } from './services/ws-telemetry.service.js';
 import { handleTradingViewWebhook } from './controllers/webhook.controller.js';
-import { getSignals, searchSignals, postTestSignal } from './controllers/signals.controller.js';
+import { getSignals, searchSignals, postTestSignal, executeManualOrder } from './controllers/signals.controller.js';
 import { getLivePositions, closeSpecificPosition } from './controllers/positions.controller.js';
 import { getBridgeStatus, togglePause, getAlerts, getEquityCurve } from './controllers/telemetry.controller.js';
 import { flattenAllPositions } from './controllers/emergency.controller.js';
@@ -76,6 +76,7 @@ async function bootstrap() {
     app.get('/api/signals', getSignals);
     app.get('/api/search', searchSignals);
     app.post('/api/test-signal', postTestSignal);
+    app.post('/api/manual-order', executeManualOrder);
     app.get('/api/positions', getLivePositions);
     app.post('/api/positions/:ticket/close', closeSpecificPosition);
     app.get('/api/bridge/status', getBridgeStatus);
@@ -94,6 +95,13 @@ async function bootstrap() {
     // 4. Start HTTP Server & Attach WebSocket Telemetry Hub
     await app.listen({ port: env.PORT, host: env.HOST });
     wsTelemetry.initialize(app.server);
+    // Wire real-time MT5 account and equity sync directly to WebSocket broadcaster
+    mt5TcpHub.onAccountSync((data) => {
+        wsTelemetry.broadcast({
+            type: 'ACCOUNT_SYNC',
+            payload: data
+        });
+    });
     logger.info({ port: env.PORT, host: env.HOST, mt5_tcp_port: env.MT5_TCP_PORT }, 'TI AUTOPILOT High-Throughput Engine online');
     // 5. Graceful Process Termination
     const shutdown = async (signal) => {

@@ -35,9 +35,9 @@ class EquityHistoryService {
     if (!data.account_number || data.balance <= 0) return;
 
     const now = Date.now();
-    const equityChanged = Math.abs(data.equity - this.lastRecordedEquity) >= 0.05;
+    const equityChanged = Math.abs(data.equity - this.lastRecordedEquity) >= 0.01;
     const balanceChanged = Math.abs(data.balance - this.lastRecordedBalance) >= 0.01;
-    const timeElapsed = now - this.lastSnapshotTime >= 15000; // 15 seconds
+    const timeElapsed = now - this.lastSnapshotTime >= 5000; // 5 seconds max interval
 
     if (!timeElapsed && !equityChanged && !balanceChanged) {
       return;

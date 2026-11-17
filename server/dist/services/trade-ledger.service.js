@@ -69,28 +69,43 @@ class TradeLedgerService {
                 pnl = Number((priceDiff * existing.lot * 100).toFixed(2));
             }
             pnl = pnl || 0.0;
+            const openPrice = existing?.open_price || data.open_price || data.close_price;
+            const action = existing?.action || data.action || 'BUY';
             let pnlPct = 0.0;
-            if (existing && existing.open_price > 0) {
-                const diff = existing.action === 'BUY'
-                    ? (data.close_price - existing.open_price)
-                    : (existing.open_price - data.close_price);
-                pnlPct = Number(((diff / existing.open_price) * 100).toFixed(2));
+            if (openPrice > 0) {
+                const diff = action === 'BUY'
+                    ? (data.close_price - openPrice)
+                    : (openPrice - data.close_price);
+                pnlPct = Number(((diff / openPrice) * 100).toFixed(2));
             }
-            const stmt = db.prepare(`
-        UPDATE trade_ledger
-        SET close_price = ?,
-            profit_loss = ?,
-            profit_loss_pct = ?,
-            equity_after_trade = ?,
-            balance_after_trade = ?,
-            status = 'CLOSED',
-            close_time = ?,
-            comment = COALESCE(?, comment),
-            sync_status = 'PENDING',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE ticket = ?
-      `);
-            stmt.run(data.close_price, pnl, pnlPct, data.equity, data.balance, closeTime, data.comment || null, data.ticket);
+            if (!existing) {
+                // Trade was opened externally/manually and closed; insert directly into ledger as CLOSED
+                const insertStmt = db.prepare(`
+          INSERT INTO trade_ledger (
+            ticket, strategy, symbol, action, lot, open_price, close_price,
+            sl, tp, profit_loss, profit_loss_pct, equity_after_trade, balance_after_trade,
+            status, open_time, close_time, comment, sync_status
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'PENDING')
+        `);
+                insertStmt.run(data.ticket, data.strategy || 'MANUAL', data.symbol || 'GOLD.i#', action, data.lot || 0.01, openPrice, data.close_price, data.sl || 0, data.tp || 0, pnl, pnlPct, data.equity, data.balance, new Date(Date.now() - 60000).toISOString(), closeTime, data.comment || 'Manual MT5 Execution');
+            }
+            else {
+                const stmt = db.prepare(`
+          UPDATE trade_ledger
+          SET close_price = ?,
+              profit_loss = ?,
+              profit_loss_pct = ?,
+              equity_after_trade = ?,
+              balance_after_trade = ?,
+              status = 'CLOSED',
+              close_time = ?,
+              comment = COALESCE(?, comment),
+              sync_status = 'PENDING',
+              updated_at = CURRENT_TIMESTAMP
+          WHERE ticket = ?
+        `);
+                stmt.run(data.close_price, pnl, pnlPct, data.equity, data.balance, closeTime, data.comment || null, data.ticket);
+            }
             logger.info({ ticket: data.ticket, pnl, equityAfter: data.equity }, 'Recorded CLOSED trade in ledger');
             this.syncPendingToSupabase().catch(() => { });
         }

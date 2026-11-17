@@ -41,11 +41,20 @@ export const ManualSignalModal: React.FC<ManualSignalModalProps> = ({
     };
 
     try {
-      const res = await fetch('/api/test-signal', {
+      let res = await fetch('/api/manual-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
+      if (!res.ok) {
+        // Fallback to test-signal
+        res = await fetch('/api/test-signal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
 
       if (!res.ok) {
         const data = await res.json();

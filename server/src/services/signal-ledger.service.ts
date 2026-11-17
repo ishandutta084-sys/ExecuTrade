@@ -92,6 +92,51 @@ class SignalLedgerService {
     );
   }
 
+  public recordManualExecution(data: {
+    signal_id: string;
+    strategy: string;
+    action: string;
+    symbol: string;
+    lot: number;
+    open_price: number;
+    sl?: number;
+    tp?: number;
+    order_ticket: string | number;
+    status: 'EXECUTED';
+    execution_message: string;
+  }) {
+    const existing = db.prepare('SELECT id FROM webhook_signals WHERE signal_id = ?').get(data.signal_id);
+    if (!existing) {
+      db.prepare(`
+        INSERT INTO webhook_signals
+        (signal_id, strategy, action, symbol, lot, sl, tp, status, order_ticket, position_ticket, executed_price, execution_message, latency_ms, attempts)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'EXECUTED', ?, ?, ?, ?, 0, 1)
+      `).run(
+        data.signal_id,
+        data.strategy,
+        data.action,
+        data.symbol,
+        data.lot,
+        data.sl || 0,
+        data.tp || 0,
+        String(data.order_ticket),
+        String(data.order_ticket),
+        data.open_price,
+        data.execution_message
+      );
+
+      db.prepare(`
+        INSERT INTO execution_logs
+        (signal_id, attempt_number, status, order_ticket, message)
+        VALUES (?, 1, 'EXECUTED', ?, ?)
+      `).run(
+        data.signal_id,
+        String(data.order_ticket),
+        data.execution_message
+      );
+    }
+  }
+
   public getAllSignals(limit = 100): SignalRecord[] {
     return db.prepare(`
       SELECT *

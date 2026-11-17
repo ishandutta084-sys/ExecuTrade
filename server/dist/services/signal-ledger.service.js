@@ -30,6 +30,21 @@ class SignalLedgerService {
       VALUES (?, 1, ?, ?, ?)
     `).run(signalId, status, data.order_ticket ? String(data.order_ticket) : null, data.execution_message || (status === 'EXECUTED' ? 'Filled' : 'Rejected'));
     }
+    recordManualExecution(data) {
+        const existing = db.prepare('SELECT id FROM webhook_signals WHERE signal_id = ?').get(data.signal_id);
+        if (!existing) {
+            db.prepare(`
+        INSERT INTO webhook_signals
+        (signal_id, strategy, action, symbol, lot, sl, tp, status, order_ticket, position_ticket, executed_price, execution_message, latency_ms, attempts)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'EXECUTED', ?, ?, ?, ?, 0, 1)
+      `).run(data.signal_id, data.strategy, data.action, data.symbol, data.lot, data.sl || 0, data.tp || 0, String(data.order_ticket), String(data.order_ticket), data.open_price, data.execution_message);
+            db.prepare(`
+        INSERT INTO execution_logs
+        (signal_id, attempt_number, status, order_ticket, message)
+        VALUES (?, 1, 'EXECUTED', ?, ?)
+      `).run(data.signal_id, String(data.order_ticket), data.execution_message);
+        }
+    }
     getAllSignals(limit = 100) {
         return db.prepare(`
       SELECT *

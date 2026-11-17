@@ -5,6 +5,9 @@ import { brokerNormalizer } from '../core/broker-normalizer.js';
 import { positionTracker } from '../core/position-tracker.js';
 import { equityHistoryService } from '../services/equity-history.service.js';
 import { tradeLedgerService } from '../services/trade-ledger.service.js';
+import { signalLedger } from '../services/signal-ledger.service.js';
+import { wsTelemetry } from '../services/ws-telemetry.service.js';
+import { db } from '../config/database.js';
 class Mt5TcpHub {
     server = null;
     activeSocket = null;
@@ -97,18 +100,106 @@ class Mt5TcpHub {
         if (msg.event === 'ACCOUNT_SYNC') {
             this.latestAccountData = msg;
             equityHistoryService.recordSnapshot(this.latestAccountData);
-            // Detect any positions that just closed in MT5 (e.g. TP/SL hit)
+            // Always broadcast live account & equity sync to all connected WebSocket clients
+            try {
+                wsTelemetry.broadcast({
+                    type: 'ACCOUNT_SYNC',
+                    payload: this.latestAccountData
+                });
+            }
+            catch { }
+            // Ingest & track positions
             if (Array.isArray(this.latestAccountData.open_positions)) {
                 const currentTickets = new Set(this.latestAccountData.open_positions.map(p => p.ticket));
+                // A. Auto-detect any NEW open positions in MT5 (manual trades or external orders)
+                for (const p of this.latestAccountData.open_positions) {
+                    if (!this.previousPositions.has(p.ticket)) {
+                        try {
+                            const existing = db.prepare('SELECT ticket FROM trade_ledger WHERE ticket = ?').get(p.ticket);
+                            if (!existing) {
+                                const strategyName = p.magic === 0 ? 'MANUAL' : (p.comment || 'MANUAL_MT5');
+                                logger.info({ ticket: p.ticket, symbol: p.symbol, type: p.type }, 'Auto-detected manual MT5 trade; registering in ledger & logs');
+                                tradeLedgerService.recordOpenTrade({
+                                    ticket: p.ticket,
+                                    strategy: strategyName,
+                                    symbol: p.symbol,
+                                    action: p.type,
+                                    lot: p.lot,
+                                    open_price: p.open_price,
+                                    sl: p.sl || 0,
+                                    tp: p.tp || 0,
+                                    equity: this.latestAccountData.equity,
+                                    balance: this.latestAccountData.balance,
+                                    comment: p.comment || 'Manual MT5 Terminal Order'
+                                });
+                                // Record in signals ledger & execution logs
+                                const manualSigId = `MANUAL-${p.ticket}`;
+                                signalLedger.recordManualExecution({
+                                    signal_id: manualSigId,
+                                    strategy: strategyName,
+                                    action: p.type,
+                                    symbol: p.symbol,
+                                    lot: p.lot,
+                                    open_price: p.open_price,
+                                    sl: p.sl || 0,
+                                    tp: p.tp || 0,
+                                    order_ticket: p.ticket,
+                                    status: 'EXECUTED',
+                                    execution_message: `Manual MT5 Order #${p.ticket} (${p.type} ${p.lot} ${p.symbol}) detected & executed`
+                                });
+                                // Broadcast live signal event to console
+                                wsTelemetry.broadcast({
+                                    type: 'SIGNAL_RECEIVED',
+                                    payload: {
+                                        signal_id: manualSigId,
+                                        strategy: strategyName,
+                                        action: p.type,
+                                        symbol: p.symbol,
+                                        lot: p.lot,
+                                        status: 'EXECUTED'
+                                    }
+                                });
+                            }
+                        }
+                        catch (err) {
+                            logger.error({ err: err.message, ticket: p.ticket }, 'Failed to ingest newly detected manual trade');
+                        }
+                    }
+                }
+                // B. Detect positions that just closed in MT5 (e.g. TP/SL/Manual Close)
                 for (const [ticket, prev] of this.previousPositions.entries()) {
                     if (!currentTickets.has(ticket)) {
+                        const strategyName = prev.magic === 0 ? 'MANUAL' : (prev.comment || 'MANUAL_MT5');
+                        logger.info({ ticket, symbol: prev.symbol, pnl: prev.pnl }, 'Position closed in MT5; recording exit in ledger & logs');
                         tradeLedgerService.recordCloseTrade({
                             ticket,
+                            strategy: strategyName,
+                            symbol: prev.symbol,
+                            action: prev.type,
+                            lot: prev.lot,
+                            open_price: prev.open_price,
                             close_price: prev.current_price || prev.open_price,
                             profit_loss: prev.pnl,
                             equity: this.latestAccountData.equity,
                             balance: this.latestAccountData.balance,
-                            comment: 'MT5 Terminal Execution (TP/SL/Manual Exit)'
+                            comment: 'MT5 Terminal Execution (Closed / TP / SL / Manual Exit)'
+                        });
+                        // Log closure in execution logs
+                        const closeSigId = `CLOSE-${ticket}-${Date.now().toString().slice(-4)}`;
+                        signalLedger.recordManualExecution({
+                            signal_id: closeSigId,
+                            strategy: strategyName,
+                            action: 'CLOSE',
+                            symbol: prev.symbol,
+                            lot: prev.lot,
+                            open_price: prev.current_price || prev.open_price,
+                            order_ticket: ticket,
+                            status: 'EXECUTED',
+                            execution_message: `Position #${ticket} closed | PnL: ${prev.pnl >= 0 ? '+' : ''}$${prev.pnl.toFixed(2)} | Equity: $${this.latestAccountData.equity.toFixed(2)}`
+                        });
+                        wsTelemetry.broadcast({
+                            type: 'SIGNAL_EXECUTED',
+                            payload: { signal_id: closeSigId, status: 'EXECUTED', ticket }
                         });
                     }
                 }
@@ -172,6 +263,9 @@ class Mt5TcpHub {
         return this.latestAccountData;
     }
     setAccountSyncCallback(cb) {
+        this.onAccountSyncCallback = cb;
+    }
+    onAccountSync(cb) {
         this.onAccountSyncCallback = cb;
     }
 }

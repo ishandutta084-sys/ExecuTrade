@@ -29,6 +29,19 @@ declare class SignalLedgerService {
         latency_ms?: number | null;
         executed_price?: number | null;
     }): void;
+    recordManualExecution(data: {
+        signal_id: string;
+        strategy: string;
+        action: string;
+        symbol: string;
+        lot: number;
+        open_price: number;
+        sl?: number;
+        tp?: number;
+        order_ticket: string | number;
+        status: 'EXECUTED';
+        execution_message: string;
+    }): void;
     getAllSignals(limit?: number): SignalRecord[];
     searchSignals(query: string, limit?: number): SignalRecord[];
     getAlerts(limit?: number): {

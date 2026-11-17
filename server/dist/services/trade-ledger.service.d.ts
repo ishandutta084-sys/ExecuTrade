@@ -68,6 +68,13 @@ declare class TradeLedgerService {
         balance: number;
         close_time?: string;
         comment?: string;
+        strategy?: string;
+        symbol?: string;
+        action?: 'BUY' | 'SELL';
+        lot?: number;
+        open_price?: number;
+        sl?: number;
+        tp?: number;
     }): void;
     getLedger(options: {
         status?: string;

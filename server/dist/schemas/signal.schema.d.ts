@@ -21,9 +21,9 @@ export declare const TradingSignalSchema: z.ZodObject<{
     tp: number;
     signal_id: string;
     deviation: number;
+    secret?: string | undefined;
     price?: number | undefined;
     timestamp?: string | number | undefined;
-    secret?: string | undefined;
     is_test?: boolean | undefined;
 }, {
     symbol: string;
@@ -33,10 +33,10 @@ export declare const TradingSignalSchema: z.ZodObject<{
     lot?: number | undefined;
     sl?: number | undefined;
     tp?: number | undefined;
-    price?: number | undefined;
-    timestamp?: string | number | undefined;
     secret?: string | undefined;
+    price?: number | undefined;
     deviation?: number | undefined;
+    timestamp?: string | number | undefined;
     is_test?: boolean | undefined;
 }>;
 export type TradingSignal = z.infer<typeof TradingSignalSchema>;
