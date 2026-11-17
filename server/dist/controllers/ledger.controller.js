@@ -52,4 +52,11 @@ export async function getAnalyticsSummary(req, reply) {
         analytics
     });
 }
+export async function backfillLedgerController(req, reply) {
+    const result = tradeLedgerService.backfillLedger();
+    return reply.send({
+        status: 'SUCCESS',
+        ...result
+    });
+}
 //# sourceMappingURL=ledger.controller.js.map

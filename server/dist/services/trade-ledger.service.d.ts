@@ -87,12 +87,16 @@ declare class TradeLedgerService {
         summary: LedgerSummary;
     };
     getSummaryStats(): LedgerSummary;
+    backfillLedger(): {
+        inserted: number;
+        total: number;
+    };
     syncPendingToSupabase(): Promise<{
         success: boolean;
         synced: number;
         error?: string;
     }>;
-    private seedInitialTradesIfEmpty;
+    hydrateFromExecutedSignalsOrSeeds(force?: boolean): void;
 }
 export declare const tradeLedgerService: TradeLedgerService;
 export {};

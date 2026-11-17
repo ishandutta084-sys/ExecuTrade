@@ -4,3 +4,4 @@ export declare function triggerSupabaseSync(req: FastifyRequest, reply: FastifyR
 export declare function getSupabaseConfig(req: FastifyRequest, reply: FastifyReply): Promise<never>;
 export declare function updateSupabaseConfig(req: FastifyRequest, reply: FastifyReply): Promise<never>;
 export declare function getAnalyticsSummary(req: FastifyRequest, reply: FastifyReply): Promise<never>;
+export declare function backfillLedgerController(req: FastifyRequest, reply: FastifyReply): Promise<never>;

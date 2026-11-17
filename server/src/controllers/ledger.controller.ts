@@ -68,3 +68,11 @@ export async function getAnalyticsSummary(req: FastifyRequest, reply: FastifyRep
     analytics
   });
 }
+
+export async function backfillLedgerController(req: FastifyRequest, reply: FastifyReply) {
+  const result = tradeLedgerService.backfillLedger();
+  return reply.send({
+    status: 'SUCCESS',
+    ...result
+  });
+}

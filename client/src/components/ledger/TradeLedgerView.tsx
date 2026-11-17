@@ -30,6 +30,7 @@ export const TradeLedgerView: React.FC = () => {
     isSyncing,
     syncMessage,
     refreshTrades,
+    triggerBackfill,
     triggerSupabaseSync,
     saveSupabaseConfig
   } = useTradeLedger();
@@ -162,8 +163,17 @@ CREATE POLICY "Allow service role write" ON public.trade_ledger FOR ALL USING (t
             </p>
           </div>
 
-          {/* Cloud Sync Controls */}
+          {/* Cloud Sync & Hydration Controls */}
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={triggerBackfill}
+              title="Hydrate and sync historical trades from blotter"
+              className="px-3 py-1.5 rounded-control text-xs font-mono font-medium border border-hairline bg-raised hover:bg-surface text-secondary hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-brand" />
+              <span>Hydrate Blotter</span>
+            </button>
+
             <button
               onClick={() => setIsConfigModalOpen(true)}
               className="px-3 py-1.5 rounded-control text-xs font-mono font-medium border border-hairline bg-raised hover:bg-surface text-secondary hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -326,8 +336,25 @@ CREATE POLICY "Allow service role write" ON public.trade_ledger FOR ALL USING (t
                 </tr>
               ) : trades.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-tertiary">
-                    No trade records found matching your filter.
+                  <td colSpan={10} className="py-10 text-center text-tertiary">
+                    <div className="space-y-2">
+                      <div className="text-xs">No trade records found matching your filter.</div>
+                      {(statusFilter !== 'ALL' || searchQuery) ? (
+                        <button
+                          onClick={() => { setStatusFilter('ALL'); setSearchQuery(''); }}
+                          className="px-3 py-1 rounded bg-brand/10 text-brand hover:bg-brand/20 text-xs font-mono cursor-pointer transition-colors"
+                        >
+                          Reset Filters
+                        </button>
+                      ) : (
+                        <button
+                          onClick={triggerBackfill}
+                          className="px-3 py-1 rounded bg-brand/10 text-brand hover:bg-brand/20 text-xs font-mono cursor-pointer transition-colors"
+                        >
+                          Hydrate Blotter Records
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
