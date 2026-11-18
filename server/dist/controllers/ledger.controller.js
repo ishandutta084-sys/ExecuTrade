@@ -46,7 +46,8 @@ export async function updateSupabaseConfig(req, reply) {
     });
 }
 export async function getAnalyticsSummary(req, reply) {
-    const analytics = analyticsService.getAnalytics();
+    const query = req.query;
+    const analytics = analyticsService.getAnalytics(query.strategy);
     return reply.send({
         status: 'SUCCESS',
         analytics

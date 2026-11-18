@@ -12,12 +12,21 @@ import {
   Zap,
   ShieldAlert,
   Percent,
-  Activity
+  Activity,
+  Filter,
+  CheckCircle2,
+  Layers
 } from 'lucide-react';
 import { useTradeAnalytics } from '../../hooks/useTradeAnalytics.js';
 
 export const TradeAnalyticsView: React.FC = () => {
-  const { analytics, isLoading, refreshAnalytics } = useTradeAnalytics();
+  const {
+    analytics,
+    isLoading,
+    refreshAnalytics,
+    selectedStrategy,
+    setSelectedStrategy
+  } = useTradeAnalytics();
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
 
   const a = analytics;
@@ -47,17 +56,129 @@ export const TradeAnalyticsView: React.FC = () => {
             </p>
           </div>
 
-          <button
-            onClick={refreshAnalytics}
-            disabled={isLoading}
-            className="px-3 py-1.5 rounded-control text-xs font-mono font-medium border border-hairline bg-raised hover:bg-surface text-secondary hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer self-start sm:self-center shadow-xs disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-brand ${isLoading ? 'animate-spin' : ''}`} />
-            <span>{isLoading ? 'Recalculating...' : 'Recalculate'}</span>
-          </button>
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-control text-xs font-mono bg-raised/70 border border-hairline text-secondary">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span>{a.total_trades} Closed Trades Analyzed</span>
+            </span>
+
+            <button
+              onClick={refreshAnalytics}
+              disabled={isLoading}
+              className="px-3 py-1.5 rounded-control text-xs font-mono font-medium border border-hairline bg-raised hover:bg-surface text-secondary hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-brand ${isLoading ? 'animate-spin' : ''}`} />
+              <span>{isLoading ? 'Recalculating...' : 'Recalculate'}</span>
+            </button>
+          </div>
         </div>
 
-        {/* 2. THE 6 SPECIFIC REQUESTED ANALYTIC CARDS */}
+        {/* 2. TOP PORTFOLIO SUMMARY STRIP (Immediate Parity with Trade Execution Ledger) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 pt-1">
+          {/* Closed Trades */}
+          <div className="p-3.5 bg-raised/60 rounded-control border border-hairline flex flex-col justify-between">
+            <div className="text-[10px] font-mono text-tertiary uppercase font-bold tracking-wider">
+              Closed Trades
+            </div>
+            <div className="text-2xl font-extrabold font-mono text-primary mt-1 tabular-nums">
+              {a.total_trades}
+              <span className="text-xs font-semibold text-emerald-500 ml-1.5 font-sans">
+                ({a.win_rate_pct}% Win)
+              </span>
+            </div>
+            <div className="text-[10px] font-mono text-tertiary mt-1">
+              {a.win_trades} Won • {a.loss_trades} Lost
+            </div>
+          </div>
+
+          {/* Realized Net P&L */}
+          <div className="p-3.5 bg-raised/60 rounded-control border border-hairline flex flex-col justify-between">
+            <div className="text-[10px] font-mono text-tertiary uppercase font-bold tracking-wider">
+              Realized Net P&L
+            </div>
+            <div className={`text-2xl font-extrabold font-mono mt-1 tabular-nums ${a.net_profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+              {a.net_profit >= 0 ? `+$${a.net_profit.toFixed(2)}` : `-$${Math.abs(a.net_profit).toFixed(2)}`}
+            </div>
+            <div className="text-[10px] font-mono text-tertiary mt-1">
+              Gross: +${a.gross_profit.toFixed(2)}
+            </div>
+          </div>
+
+          {/* Profit Factor */}
+          <div className="p-3.5 bg-raised/60 rounded-control border border-hairline flex flex-col justify-between">
+            <div className="text-[10px] font-mono text-tertiary uppercase font-bold tracking-wider">
+              Profit Factor
+            </div>
+            <div className="text-2xl font-extrabold font-mono text-primary mt-1 tabular-nums">
+              {a.profit_factor}
+            </div>
+            <div className="text-[10px] font-mono text-tertiary mt-1">
+              Loss: -${a.gross_loss.toFixed(2)}
+            </div>
+          </div>
+
+          {/* Post-Trade Equity */}
+          <div className="p-3.5 bg-brand/5 rounded-control border border-brand/40 flex flex-col justify-between">
+            <div className="text-[10px] font-mono text-brand uppercase font-bold tracking-wider">
+              Post-Trade Equity
+            </div>
+            <div className="text-2xl font-extrabold font-mono text-brand mt-1 tabular-nums">
+              ${a.current_equity.toFixed(2)}
+            </div>
+            <div className="text-[10px] font-mono text-secondary mt-1">
+              Balance: ${a.current_balance.toFixed(2)}
+            </div>
+          </div>
+
+          {/* Trade Expectancy */}
+          <div className="p-3.5 bg-raised/60 rounded-control border border-hairline flex flex-col justify-between col-span-2 sm:col-span-1">
+            <div className="text-[10px] font-mono text-tertiary uppercase font-bold tracking-wider">
+              Trade Expectancy
+            </div>
+            <div className="text-2xl font-extrabold font-mono text-emerald-500 mt-1 tabular-nums">
+              +${a.expectancy.toFixed(2)}
+            </div>
+            <div className="text-[10px] font-mono text-tertiary mt-1">
+              Expected value / trade
+            </div>
+          </div>
+        </div>
+
+        {/* 3. STRATEGY FILTER PILLS */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-hairline/60">
+          <div className="flex items-center gap-1.5 text-xs font-mono text-secondary mr-2">
+            <Filter className="w-3.5 h-3.5 text-brand" />
+            <span className="font-semibold">Filter:</span>
+          </div>
+
+          <button
+            onClick={() => setSelectedStrategy('ALL')}
+            className={`px-3 py-1 rounded text-xs font-mono font-medium transition-colors cursor-pointer ${
+              selectedStrategy === 'ALL'
+                ? 'bg-brand text-white shadow-xs'
+                : 'bg-raised/70 text-secondary hover:text-primary hover:bg-raised border border-hairline'
+            }`}
+          >
+            ALL ({a.total_trades})
+          </button>
+
+          {(a.strategy_breakdown || []).map(sb => (
+            <button
+              key={sb.strategy}
+              onClick={() => setSelectedStrategy(sb.strategy)}
+              className={`px-3 py-1 rounded text-xs font-mono font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                selectedStrategy === sb.strategy
+                  ? 'bg-brand text-white shadow-xs'
+                  : 'bg-raised/70 text-secondary hover:text-primary hover:bg-raised border border-hairline'
+              }`}
+            >
+              <span>{sb.strategy}</span>
+              <span className="text-[10px] opacity-80">({sb.count} • {sb.net_profit >= 0 ? `+$${sb.net_profit}` : `-$${Math.abs(sb.net_profit)}`})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* 4. THE 6 SPECIFIC REQUESTED ANALYTIC CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2">
           {/* Card 1: Most Profitable Day of the Month */}
           <div className="p-4 bg-raised/50 rounded-control border border-hairline border-l-3 border-l-brand flex flex-col justify-between space-y-2">
@@ -79,7 +200,7 @@ export const TradeAnalyticsView: React.FC = () => {
               </div>
             </div>
             <div className="text-[10px] font-mono text-tertiary">
-              Total realized: +${a.most_profitable_day_of_month.total_profit.toFixed(2)} ({a.most_profitable_day_of_month.trade_count} trades)
+              Total realized: +${a.most_profitable_day_of_month.total_profit.toFixed(2)} ({a.most_profitable_day_of_month.trade_count} trades on this day) • Sampled across {a.total_trades} portfolio trades
             </div>
           </div>
 
@@ -91,7 +212,7 @@ export const TradeAnalyticsView: React.FC = () => {
                 Highest Profit (1 Trade)
               </span>
               <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                MAX WIN
+                MAX WIN OUTLIER
               </span>
             </div>
             <div>
@@ -115,7 +236,7 @@ export const TradeAnalyticsView: React.FC = () => {
                 Highest Loss (1 Trade)
               </span>
               <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
-                MAX LOSS
+                MAX LOSS ADVERSE
               </span>
             </div>
             <div>
@@ -220,10 +341,10 @@ export const TradeAnalyticsView: React.FC = () => {
               DAY OF THE MONTH PROFITABILITY PROFILE (1 - 31)
             </h3>
             <p className="text-xs text-secondary mt-0.5">
-              Average net profit per trade executed on each calendar day of the month.
+              Average net profit per trade executed on each calendar day of the month. Active trading spans Nov 12 - 17.
             </p>
           </div>
-          <div className="flex items-center gap-3 text-xs font-mono text-secondary">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-secondary">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>
               <span>Net Profit Day</span>
@@ -231,6 +352,10 @@ export const TradeAnalyticsView: React.FC = () => {
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-rose-500"></span>
               <span>Net Loss Day</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-slate-500/40"></span>
+              <span className="text-tertiary">Unexecuted Day</span>
             </div>
           </div>
         </div>

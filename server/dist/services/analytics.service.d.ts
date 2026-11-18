@@ -74,10 +74,17 @@ export interface TradeAnalytics {
         pnl: number;
         equity: number;
     }>;
+    strategy_filter?: string;
+    strategy_breakdown?: Array<{
+        strategy: string;
+        count: number;
+        net_profit: number;
+        win_rate: number;
+    }>;
 }
 export declare function calculateTradePips(symbol: string, openPrice: number, closePrice: number | null, action: 'BUY' | 'SELL'): number;
 declare class AnalyticsService {
-    getAnalytics(): TradeAnalytics;
+    getAnalytics(strategyFilter?: string): TradeAnalytics;
     private getOrdinalSuffix;
     private getEnrichedHistoricalDataset;
 }

@@ -74,4 +74,11 @@ export interface TradeAnalytics {
     pnl: number;
     equity: number;
   }>;
+  strategy_filter?: string;
+  strategy_breakdown?: Array<{
+    strategy: string;
+    count: number;
+    net_profit: number;
+    win_rate: number;
+  }>;
 }

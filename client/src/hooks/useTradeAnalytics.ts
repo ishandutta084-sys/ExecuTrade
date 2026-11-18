@@ -106,11 +106,46 @@ function calculatePips(symbol: string, open: number, close: number | null, actio
   return Number((diff * 10000).toFixed(1));
 }
 
-function computeFromLedger(records: TradeLedgerRecord[]): TradeAnalytics {
+function computeFromLedger(records: TradeLedgerRecord[], strategyFilter?: string): TradeAnalytics {
   if (!records || records.length === 0) return DEFAULT_ANALYTICS;
 
-  const closed = records.filter(r => r.status === 'CLOSED');
-  if (closed.length === 0) return DEFAULT_ANALYTICS;
+  const allClosed = records.filter(r => r.status === 'CLOSED');
+
+  // Compute strategy breakdown across all closed records
+  const stratMap: Record<string, { count: number; net_profit: number; wins: number }> = {};
+  for (const r of allClosed) {
+    const s = r.strategy || 'MANUAL';
+    if (!stratMap[s]) stratMap[s] = { count: 0, net_profit: 0, wins: 0 };
+    stratMap[s].count++;
+    stratMap[s].net_profit += r.profit_loss;
+    if (r.profit_loss > 0) stratMap[s].wins++;
+  }
+
+  const strategyBreakdown = Object.entries(stratMap).map(([strategy, data]) => ({
+    strategy,
+    count: data.count,
+    net_profit: Number(data.net_profit.toFixed(2)),
+    win_rate: Number(((data.wins / data.count) * 100).toFixed(1))
+  }));
+
+  let targetClosed = allClosed;
+  if (strategyFilter && strategyFilter !== 'ALL') {
+    targetClosed = allClosed.filter(r => (r.strategy || 'MANUAL') === strategyFilter);
+  }
+
+  const closed = targetClosed;
+  if (closed.length === 0) {
+    return {
+      ...DEFAULT_ANALYTICS,
+      strategy_filter: strategyFilter || 'ALL',
+      strategy_breakdown: strategyBreakdown,
+      total_trades: 0,
+      win_trades: 0,
+      loss_trades: 0,
+      net_profit: 0,
+      win_rate_pct: 0
+    };
+  }
 
   const winning = closed.filter(r => r.profit_loss > 0);
   const losing = closed.filter(r => r.profit_loss < 0);
@@ -243,6 +278,8 @@ function computeFromLedger(records: TradeLedgerRecord[]): TradeAnalytics {
   }));
 
   return {
+    strategy_filter: strategyFilter || 'ALL',
+    strategy_breakdown: strategyBreakdown,
     most_profitable_day_of_month: bestDay,
     highest_profit_trade: highWin,
     highest_loss_trade: highLoss,
@@ -272,15 +309,26 @@ export function useTradeAnalytics() {
   const [analytics, setAnalytics] = useState<TradeAnalytics>(DEFAULT_ANALYTICS);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedStrategy, setSelectedStrategy] = useState<string>('ALL');
 
-  const fetchAnalytics = useCallback(async () => {
+  const fetchAnalytics = useCallback(async (isManualRecalc = false) => {
     setIsLoading(true);
     try {
-      // 1. Primary: Server Analytics Calculation Endpoint
-      let res = await fetch('/api/analytics/summary');
+      if (isManualRecalc) {
+        // Trigger backfill on manual recalculation to ingest any newly closed MT5 trades
+        try {
+          await fetch('/api/ledger/backfill', { method: 'POST' });
+        } catch (e) {
+          console.warn('Backfill trigger note:', e);
+        }
+      }
+
+      // 1. Primary: Server Analytics Calculation Endpoint with strategy filter
+      const queryParam = selectedStrategy && selectedStrategy !== 'ALL' ? `?strategy=${encodeURIComponent(selectedStrategy)}` : '';
+      let res = await fetch(`/api/analytics/summary${queryParam}`);
       if (!res.ok) {
         // Fallback endpoint route
-        res = await fetch('/api/ledger/analytics');
+        res = await fetch(`/api/ledger/analytics${queryParam}`);
       }
 
       if (res.ok) {
@@ -292,12 +340,12 @@ export function useTradeAnalytics() {
         }
       }
 
-      // 2. Secondary Fallback: Load directly from trade ledger
-      const ledgerRes = await fetch('/api/ledger/trades?limit=100');
+      // 2. Secondary Fallback: Load directly from trade ledger with limit=1000
+      const ledgerRes = await fetch('/api/ledger/trades?limit=1000');
       if (ledgerRes.ok) {
         const ledgerJson = await ledgerRes.json();
         if (ledgerJson.status === 'SUCCESS' && ledgerJson.records?.length > 0) {
-          const computed = computeFromLedger(ledgerJson.records);
+          const computed = computeFromLedger(ledgerJson.records, selectedStrategy);
           setAnalytics(computed);
           setError(null);
           return;
@@ -309,11 +357,11 @@ export function useTradeAnalytics() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedStrategy]);
 
   useEffect(() => {
     fetchAnalytics();
-    const interval = setInterval(fetchAnalytics, 15000); // 15s refresh
+    const interval = setInterval(() => fetchAnalytics(false), 15000); // 15s refresh
     return () => clearInterval(interval);
   }, [fetchAnalytics]);
 
@@ -321,6 +369,8 @@ export function useTradeAnalytics() {
     analytics,
     isLoading,
     error,
-    refreshAnalytics: fetchAnalytics
+    selectedStrategy,
+    setSelectedStrategy,
+    refreshAnalytics: () => fetchAnalytics(true)
   };
 }

@@ -21,17 +21,40 @@ export function calculateTradePips(symbol, openPrice, closePrice, action) {
     }
 }
 class AnalyticsService {
-    getAnalytics() {
-        let rows = [];
+    getAnalytics(strategyFilter) {
+        let allRows = [];
         try {
-            rows = db.prepare('SELECT * FROM trade_ledger ORDER BY open_time ASC').all();
+            allRows = db.prepare('SELECT * FROM trade_ledger ORDER BY open_time ASC').all();
         }
         catch (err) {
             logger.error({ err: err.message }, 'Failed to query trade ledger for analytics');
         }
         // If records are fewer than 15, synthesize historical trade dataset based on recent performance
-        if (rows.length < 15) {
-            rows = this.getEnrichedHistoricalDataset(rows);
+        if (allRows.length < 15) {
+            allRows = this.getEnrichedHistoricalDataset(allRows);
+        }
+        // Compute strategy breakdown across all closed records
+        const allClosed = allRows.filter(r => r.status === 'CLOSED');
+        const stratMap = {};
+        for (const r of allClosed) {
+            const s = r.strategy || 'MANUAL';
+            if (!stratMap[s])
+                stratMap[s] = { count: 0, net_profit: 0, wins: 0 };
+            stratMap[s].count++;
+            stratMap[s].net_profit += r.profit_loss;
+            if (r.profit_loss > 0)
+                stratMap[s].wins++;
+        }
+        const strategyBreakdown = Object.entries(stratMap).map(([strategy, data]) => ({
+            strategy,
+            count: data.count,
+            net_profit: Number(data.net_profit.toFixed(2)),
+            win_rate: Number(((data.wins / data.count) * 100).toFixed(1))
+        }));
+        // Filter rows if strategyFilter is provided and not 'ALL'
+        let rows = allRows;
+        if (strategyFilter && strategyFilter !== 'ALL') {
+            rows = allRows.filter(r => (r.strategy || 'MANUAL') === strategyFilter);
         }
         const closed = rows.filter(r => r.status === 'CLOSED');
         const winning = closed.filter(r => r.profit_loss > 0);
@@ -183,6 +206,8 @@ class AnalyticsService {
             equity: Number(t.equity_after_trade.toFixed(2))
         }));
         return {
+            strategy_filter: strategyFilter || 'ALL',
+            strategy_breakdown: strategyBreakdown,
             most_profitable_day_of_month: bestDay,
             highest_profit_trade: highestProfitTrade,
             highest_loss_trade: highestLossTrade,

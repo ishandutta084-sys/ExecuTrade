@@ -62,7 +62,8 @@ export async function updateSupabaseConfig(req: FastifyRequest, reply: FastifyRe
 }
 
 export async function getAnalyticsSummary(req: FastifyRequest, reply: FastifyReply) {
-  const analytics = analyticsService.getAnalytics();
+  const query = req.query as { strategy?: string };
+  const analytics = analyticsService.getAnalytics(query.strategy);
   return reply.send({
     status: 'SUCCESS',
     analytics
