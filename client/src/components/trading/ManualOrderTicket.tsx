@@ -90,6 +90,16 @@ export const ManualOrderTicket: React.FC<ManualOrderTicketProps> = ({
   const effectiveEquity = Math.max(accountEquity, 100);
   const marginPct = Number(((requiredMargin / effectiveEquity) * 100).toFixed(2));
 
+  // Slider change handler (sets lot size based on % of account equity)
+  const handleSliderChange = (pct: number) => {
+    const clampedPct = Math.min(100, Math.max(0.1, pct));
+    const targetMargin = (effectiveEquity * clampedPct) / 100;
+    const targetLot = Number(((targetMargin * leverage) / (currentPrice * 100)).toFixed(2));
+    const safeLot = Math.max(0.01, targetLot);
+    setLot(safeLot);
+    setQuantity(Math.max(1, Math.round(safeLot * 100)));
+  };
+
   const spread = Number((askPrice - bidPrice).toFixed(2));
 
   // Submit Order to backend
@@ -319,21 +329,45 @@ export const ManualOrderTicket: React.FC<ManualOrderTicketProps> = ({
         </div>
       </div>
 
-      {/* 4. Margin Details & Slider Bar */}
+      {/* 4. Margin Details & Slider Bar (Image 3 Reference) */}
       <div className="space-y-1.5 px-0.5">
-        <div className="flex items-center justify-between text-xs font-mono">
-          <span className="text-slate-400">
-            Required Margin <strong className="text-slate-200">${requiredMargin.toFixed(2)}</strong>
-          </span>
-          <span className="font-bold text-slate-200">{marginPct}%</span>
+        <div className="text-[13px] font-medium text-slate-300">
+          Required Margin <span className="text-white font-semibold">${requiredMargin.toFixed(2)}</span>
         </div>
 
-        {/* Progress / Slider Bar */}
-        <div className="w-full bg-[#132038] h-1.5 rounded-full overflow-hidden border border-[#1E293B]/60">
-          <div
-            className="bg-[#38BDF8] h-full rounded-full transition-all duration-200"
-            style={{ width: `${Math.min(marginPct * 5, 100)}%` }}
-          />
+        <div className="flex items-center gap-3">
+          {/* Interactive Range Slider */}
+          <div className="relative flex-1 flex items-center h-4">
+            {/* Visual Track */}
+            <div className="w-full h-1.5 bg-[#1E293B] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#38BDF8] rounded-full transition-all duration-75"
+                style={{ width: `${Math.min(Math.max(marginPct, 0), 100)}%` }}
+              />
+            </div>
+
+            {/* Slider Knob */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md border-2 border-[#38BDF8] pointer-events-none transition-all duration-75 z-10"
+              style={{ left: `${Math.min(Math.max(marginPct, 1.5), 98.5)}%` }}
+            />
+
+            {/* Range Input (invisible on top to capture drag / click) */}
+            <input
+              type="range"
+              min="0.1"
+              max="100"
+              step="0.1"
+              value={Math.min(Math.max(marginPct, 0.1), 100)}
+              onChange={e => handleSliderChange(parseFloat(e.target.value))}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+            />
+          </div>
+
+          {/* Percentage on Right */}
+          <span className="text-xs font-mono font-bold text-slate-200 shrink-0 min-w-[52px] text-right">
+            {marginPct.toFixed(2)}%
+          </span>
         </div>
       </div>
 
