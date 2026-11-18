@@ -15,6 +15,7 @@ import { TradeLedgerView } from './components/ledger/TradeLedgerView.js';
 import { TradeAnalyticsView } from './components/analytics/TradeAnalyticsView.js';
 import { ExecutionReceiptDrawer } from './components/audit/ExecutionReceiptDrawer.js';
 import { ManualSignalModal } from './components/modals/ManualSignalModal.js';
+import { ManualOrderTicket } from './components/trading/ManualOrderTicket.js';
 import { LoginPage } from './components/auth/LoginPage.js';
 
 export function App() {
@@ -114,41 +115,58 @@ export function App() {
         />
 
         {/* Scrollable Dashboard Body */}
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto max-w-7xl mx-auto w-full space-y-4">
+        <main className="flex-1 p-3 lg:p-5 overflow-y-auto max-w-[1680px] mx-auto w-full">
           {activeTab === 'console' ? (
-            <>
-              {/* Homepage Hero Section: Interactive Portfolio Equity & Balance Curve */}
-              <EquityHeroSection
-                status={status}
-                signals={rawSignals}
-                equityCurveData={equityCurveData}
-                timeframe={timeframe}
-                onTimeframeChange={setTimeframe}
-                isLoading={isEquityLoading}
-              />
+            <div className="flex flex-col lg:flex-row gap-4 items-start">
+              {/* Left Column (Chart, Action Bar, Signals Ledger) */}
+              <div className="flex-1 min-w-0 w-full space-y-4">
+                {/* Homepage Hero Section: Interactive Portfolio Equity & Balance Curve */}
+                <EquityHeroSection
+                  status={status}
+                  signals={rawSignals}
+                  equityCurveData={equityCurveData}
+                  timeframe={timeframe}
+                  onTimeframeChange={setTimeframe}
+                  isLoading={isEquityLoading}
+                />
 
-              {/* Inline Action Bar */}
-              <EmergencyToolbar
-                isPaused={status.ea_ingestion_paused}
-                onTogglePause={togglePause}
-                onOpenManualModal={() => setIsManualModalOpen(true)}
-                onFlattenAll={flattenAll}
-              />
+                {/* Inline Action Bar */}
+                <EmergencyToolbar
+                  isPaused={status.ea_ingestion_paused}
+                  onTogglePause={togglePause}
+                  onOpenManualModal={() => setIsManualModalOpen(true)}
+                  onFlattenAll={flattenAll}
+                />
 
-              {/* Dense Table Signals Ledger */}
-              <SignalsLedger
-                signals={signals}
-                currentFilter={filter}
-                setFilter={setFilter}
-                pendingCount={pendingCount}
-                selectedSignal={selectedSignal}
-                onSelectSignal={sig => {
-                  setSelectedSignal(sig);
-                }}
-                onOpenReceipt={() => setIsReceiptOpen(true)}
-                isLoading={isLoading}
-              />
-            </>
+                {/* Dense Table Signals Ledger */}
+                <SignalsLedger
+                  signals={signals}
+                  currentFilter={filter}
+                  setFilter={setFilter}
+                  pendingCount={pendingCount}
+                  selectedSignal={selectedSignal}
+                  onSelectSignal={sig => {
+                    setSelectedSignal(sig);
+                  }}
+                  onOpenReceipt={() => setIsReceiptOpen(true)}
+                  isLoading={isLoading}
+                />
+              </div>
+
+              {/* Right Column: Docked Manual Order Dispatch Panel (Reference Image 3) */}
+              <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 lg:sticky lg:top-0 space-y-3">
+                <ManualOrderTicket
+                  onSignalDispatched={() => {
+                    refreshSignals();
+                    refreshPositions();
+                  }}
+                  defaultSymbol={selectedSignal?.symbol || brokerPositions[0]?.symbol || 'XAUUSD'}
+                  accountEquity={equity || 629.82}
+                  accountBalance={balance || 629.82}
+                  initialPrice={brokerPositions[0]?.current_price || selectedSignal?.executed_price || 3752.86}
+                />
+              </div>
+            </div>
           ) : activeTab === 'positions' ? (
             /* Live MT5 Positions Tab */
             <LivePositionsTable
