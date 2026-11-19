@@ -559,7 +559,7 @@ def claim_next_signal(
 
             return {
                 "status": "CLAIMED",
-                "message": "Signal successfully assigned to MT5",
+                "message": "Signal logged in monitor mode (Order execution disabled on main branch)",
                 "signal_id": signal["signal_id"],
                 "strategy": signal["strategy"],
                 "action": signal["action"],
@@ -567,7 +567,8 @@ def claim_next_signal(
                 "lot": signal["lot"],
                 "sl": signal["sl"],
                 "tp": signal["tp"],
-                "attempt": current_attempts
+                "attempt": current_attempts,
+                "execution_disabled": True
             }
 
     except sqlite3.Error:

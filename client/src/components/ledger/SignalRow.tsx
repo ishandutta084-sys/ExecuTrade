@@ -16,6 +16,7 @@ export const SignalRow: React.FC<SignalRowProps> = ({
 }) => {
   const isPending = signal.status === 'PENDING' || signal.status === 'PROCESSING';
   const isExecuted = signal.status === 'EXECUTED';
+  const isMonitored = signal.status === 'MONITORED';
   const isFailed = signal.status === 'FAILED' || signal.status === 'DROPPED';
 
   // Live timer for pending rows: "3m 12s"
@@ -97,6 +98,8 @@ export const SignalRow: React.FC<SignalRowProps> = ({
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${
               isExecuted
                 ? 'bg-buy'
+                : isMonitored
+                ? 'bg-sky-400'
                 : isPending
                 ? 'bg-pending animate-pulse'
                 : 'bg-sell'
@@ -105,6 +108,8 @@ export const SignalRow: React.FC<SignalRowProps> = ({
           <span>
             {isExecuted
               ? 'Executed'
+              : isMonitored
+              ? 'Monitored'
               : isPending
               ? `Pending (${elapsedText})`
               : signal.status === 'DROPPED'

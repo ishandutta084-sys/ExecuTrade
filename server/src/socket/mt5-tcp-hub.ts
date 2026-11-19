@@ -309,12 +309,23 @@ class Mt5TcpHub {
   }
 
   public async sendCommand<T = any>(command: any, timeoutMs = 4000): Promise<T> {
+    const requestId = command.request_id || `cmd_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    command.request_id = requestId;
+
+    // Defense in depth: Guard against any order execution or position closing on main branch
+    if (command.action === 'ORDER_SEND' || command.action === 'POSITION_CLOSE' || command.action === 'FLATTEN_ALL' || command.action === 'EMERGENCY_FLATTEN') {
+      logger.warn({ action: command.action, requestId }, 'Order execution command blocked: ExecuTrade is running in monitor-only mode on main');
+      return {
+        event: 'ORDER_RESULT',
+        request_id: requestId,
+        status: 'DISABLED',
+        message: 'Order execution is disabled on main branch (Monitor-only mode)'
+      } as unknown as T;
+    }
+
     if (!this.activeSocket || this.activeSocket.destroyed) {
       throw new Error('MT5 Bridge EA is not connected via local TCP socket (127.0.0.1:8282)');
     }
-
-    const requestId = command.request_id || `cmd_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    command.request_id = requestId;
 
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {

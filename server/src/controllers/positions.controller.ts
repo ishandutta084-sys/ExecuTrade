@@ -19,25 +19,9 @@ export async function getLivePositions(req: FastifyRequest, reply: FastifyReply)
 
 export async function closeSpecificPosition(req: FastifyRequest, reply: FastifyReply) {
   const params = req.params as { ticket: string };
-  const ticket = parseInt(params.ticket);
-
-  if (isNaN(ticket) || ticket <= 0) {
-    return reply.status(400).send({ status: 'ERROR', message: 'Invalid position ticket' });
-  }
-
-  try {
-    const res = await mt5TcpHub.sendCommand({
-      action: 'POSITION_CLOSE',
-      request_id: `manual_close_${ticket}_${Date.now()}`,
-      position_ticket: ticket
-    });
-
-    return reply.send(res);
-  } catch (err: any) {
-    return reply.status(500).send({
-      status: 'FAILED',
-      message: `Failed to close position: ${err.message}`
-    });
-  }
+  return reply.status(403).send({
+    status: 'DISABLED',
+    message: 'Position closing is disabled on the main branch. ExecuTrade is running in monitor-only mode.'
+  });
 }
 

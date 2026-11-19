@@ -83,17 +83,14 @@ export const EmergencyToolbar: React.FC<EmergencyToolbarProps> = ({
           </button>
         </div>
 
-        {/* Destructive Outlined Red Button with Two-Click Confirmation */}
+        {/* Destructive Flatten Button Disabled in Monitor Mode */}
         <button
-          onClick={handleFlattenClick}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-control text-xs font-medium border transition-colors cursor-pointer ${
-            confirmFlatten
-              ? 'bg-sell text-canvas border-sell font-semibold animate-pulse'
-              : 'border-sell/40 text-sell hover:bg-sell/10'
-          }`}
+          disabled={true}
+          title="Order execution and flattening is disabled in monitor-only mode on main"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-xs font-medium border border-hairline text-tertiary bg-raised/50 cursor-not-allowed opacity-60"
         >
           <AlertOctagon className="w-3.5 h-3.5" strokeWidth={1.5} />
-          <span>{confirmFlatten ? 'Confirm flatten all positions?' : 'Flatten all positions'}</span>
+          <span>Flatten Disabled (Monitor Mode)</span>
         </button>
       </div>
     </div>

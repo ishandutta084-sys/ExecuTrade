@@ -27,47 +27,7 @@ export const ManualSignalModal: React.FC<ManualSignalModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-
-    const payload = {
-      signal_id: `MANUAL-${Date.now()}`,
-      strategy,
-      action,
-      symbol: symbol.toUpperCase().trim(),
-      lot: parseFloat(lot) || 0.01,
-      sl: parseFloat(sl) || 0,
-      tp: parseFloat(tp) || 0
-    };
-
-    try {
-      let res = await fetch('/api/manual-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        // Fallback to test-signal
-        res = await fetch('/api/test-signal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      }
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || data.error || 'Execution failed');
-      }
-
-      onSignalDispatched();
-      onClose();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
+    setError('Order execution is disabled on main branch (Monitor-only mode active).');
   };
 
   return (
@@ -184,13 +144,13 @@ export const ManualSignalModal: React.FC<ManualSignalModalProps> = ({
             />
           </div>
 
-          {/* Submit */}
+          {/* Submit Disabled */}
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="w-full py-2 rounded-control bg-[#EA7A24] hover:bg-[#D66A17] text-white font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50 mt-1 shadow-xs"
+            disabled={true}
+            className="w-full py-2 rounded-control bg-raised border border-hairline text-secondary font-semibold text-xs cursor-not-allowed opacity-75 mt-1"
           >
-            {isSubmitting ? 'Transmitting order...' : 'Transmit order to MT5 bridge'}
+            Order Execution Disabled (Monitor Mode)
           </button>
         </form>
       </div>

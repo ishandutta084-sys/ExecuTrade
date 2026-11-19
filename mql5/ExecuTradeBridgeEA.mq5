@@ -43,7 +43,8 @@ bool           g_isConnected     = false;
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   Print("[ExecuTrade] Bridge EA initializing...");
+   Print("[ExecuTrade] Bridge EA initializing in MONITOR-ONLY mode...");
+   Print("[ExecuTrade] NOTE: Order execution is DISABLED on main branch. System is running as a signal receiver & monitor only.");
 
    g_trade.SetExpertMagicNumber(InpDefaultMagic);
    g_trade.SetDeviationInPoints(InpMaxDeviation);
@@ -420,19 +421,31 @@ void ProcessCommandMessage(const string json)
 
    if(action == "ORDER_SEND")
    {
-      ExecuteOrderSend(json, reqId);
+      // Main branch: Order execution disabled. Safe monitoring only.
+      PrintFormat("ExecuTrade [MONITOR ONLY]: ORDER_SEND received for %s but execution is DISABLED on main branch.", GetJsonString(json, "symbol"));
+      SendSocketMessage(StringFormat(
+         "{\"event\":\"ORDER_RESULT\",\"request_id\":\"%s\",\"status\":\"DISABLED\",\"retcode\":10004,\"message\":\"Order execution disabled on main branch (Monitor-only mode)\"}",
+         reqId));
       return;
    }
 
    if(action == "POSITION_CLOSE")
    {
-      ExecutePositionClose(json, reqId);
+      // Main branch: Position closing disabled. Safe monitoring only.
+      PrintFormat("ExecuTrade [MONITOR ONLY]: POSITION_CLOSE received but execution is DISABLED on main branch.");
+      SendSocketMessage(StringFormat(
+         "{\"event\":\"ORDER_RESULT\",\"request_id\":\"%s\",\"status\":\"DISABLED\",\"message\":\"Position closing disabled on main branch (Monitor-only mode)\"}",
+         reqId));
       return;
    }
 
    if(action == "FLATTEN_ALL")
    {
-      ExecuteFlattenAll(json, reqId);
+      // Main branch: Flattening disabled. Safe monitoring only.
+      PrintFormat("ExecuTrade [MONITOR ONLY]: FLATTEN_ALL received but execution is DISABLED on main branch.");
+      SendSocketMessage(StringFormat(
+         "{\"event\":\"ORDER_RESULT\",\"request_id\":\"%s\",\"status\":\"DISABLED\",\"message\":\"Flatten all disabled on main branch (Monitor-only mode)\"}",
+         reqId));
       return;
    }
 }
@@ -484,11 +497,11 @@ void ExecuteOrderSend(const string json, const string reqId)
    g_trade.SetExpertMagicNumber(magic);
    g_trade.SetTypeFilling(GetSymbolFillingMode(symbol));
 
-   bool success = false;
-   if(tradeType == "BUY")
-      success = g_trade.Buy(lot, symbol, 0.0, 0.0, 0.0, "ExecuTrade_TV");
-   else
-      success = g_trade.Sell(lot, symbol, 0.0, 0.0, 0.0, "ExecuTrade_TV");
+   // Order execution is disabled on main branch (Monitor-only mode)
+   PrintFormat("ExecuTrade [MONITOR ONLY]: Refusing to execute %s %s %.2f lot (Disabled on main)", tradeType, symbol, lot);
+   SendSocketMessage(StringFormat(
+      "{\"event\":\"ORDER_RESULT\",\"request_id\":\"%s\",\"status\":\"DISABLED\",\"retcode\":10004,\"message\":\"Order execution disabled on main branch\"}", reqId));
+   return;
 
    uint retcode      = g_trade.ResultRetcode();
    ulong orderTicket = g_trade.ResultOrder();
@@ -545,9 +558,9 @@ bool ClosePositionTicket(const ulong ticket, uint &retcodeOut)
    string sym = PositionGetString(POSITION_SYMBOL);
    g_trade.SetTypeFilling(GetSymbolFillingMode(sym));
 
-   bool ok = g_trade.PositionClose(ticket);
-   retcodeOut = g_trade.ResultRetcode();
-   return (ok && (retcodeOut == 10009 || retcodeOut == 10008));
+   // Position closing is disabled on main branch (Monitor-only mode)
+   PrintFormat("ExecuTrade [MONITOR ONLY]: PositionClose for ticket %I64u skipped (Disabled on main)", ticket);
+   return false;
 }
 
 //+------------------------------------------------------------------+

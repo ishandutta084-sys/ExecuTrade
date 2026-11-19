@@ -46,7 +46,7 @@ class SignalLedgerService {
 
   public updateExecutionResult(
     signalId: string,
-    status: 'EXECUTED' | 'FAILED' | 'DROPPED',
+    status: 'EXECUTED' | 'FAILED' | 'DROPPED' | 'MONITORED',
     data: {
       order_ticket?: string | number | null;
       deal_ticket?: string | number | null;

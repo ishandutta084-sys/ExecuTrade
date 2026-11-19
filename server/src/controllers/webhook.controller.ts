@@ -110,155 +110,26 @@ export async function handleTradingViewWebhook(req: FastifyRequest, reply: Fasti
 }
 
 async function processSignalInBackground(signal: TradingSignal, startTime: number) {
-  await executionMutex.acquire(async () => {
-    const symbol = brokerNormalizer.resolveSymbol(signal.symbol);
-    const magic = brokerNormalizer.getStrategyMagic(signal.strategy);
+  // Main branch: Order execution is disabled. Run in monitor & logging mode only.
+  const ingestLatency = Date.now() - startTime;
+  logger.info(
+    { signal_id: signal.signal_id, strategy: signal.strategy, symbol: signal.symbol, action: signal.action },
+    'Processing signal in MONITOR-ONLY mode on main branch. Order placement is disabled.'
+  );
 
-    // ----------------------------------------------------
-    // CASE A: POSITION EXIT / CLOSE
-    // ----------------------------------------------------
-    if (signal.action === 'CLOSE' || signal.action === 'EXIT' || signal.action === 'FLATTEN') {
-      // 1. Casual Inversion Barrier: Wait if an ENTRY is currently in-flight
-      await positionTracker.awaitInFlight(signal.strategy, signal.symbol);
+  // Record safe execution result: signal received and stored in SQLite, order placement bypassed
+  signalLedger.updateExecutionResult(signal.signal_id, 'MONITORED', {
+    execution_message: 'Signal received, validated & stored in SQLite. Order execution is disabled on main branch (Monitor-only mode).',
+    latency_ms: ingestLatency
+  });
 
-      const active = positionTracker.getActivePosition(signal.strategy, signal.symbol);
-      const ticketToClose = active?.position_ticket || 0;
-      const magicToClose = active?.magic || brokerNormalizer.getStrategyMagic(signal.strategy);
-
-      try {
-        const res = await mt5TcpHub.sendCommand({
-          action: 'POSITION_CLOSE',
-          request_id: `close_${signal.signal_id}`,
-          strategy: signal.strategy,
-          magic: magicToClose,
-          position_ticket: ticketToClose,
-          symbol
-        });
-
-        if (res.status === 'EXECUTED' || res.status === 'NO_POSITION') {
-          if (active) {
-            positionTracker.recordClosePosition(signal.strategy, signal.symbol, active.position_ticket);
-          }
-
-          const currentAccount = mt5TcpHub.getAccountData();
-          tradeLedgerService.recordCloseTrade({
-            ticket: ticketToClose || Number(res.position_ticket || active?.position_ticket || 0),
-            close_price: res.executed_price || active?.open_price || 0,
-            equity: currentAccount?.equity || 629.82,
-            balance: currentAccount?.balance || 629.82,
-            comment: res.status === 'NO_POSITION' ? 'Position already closed (TP/SL hit)' : `TV Exit Signal: ${signal.strategy}`
-          });
-
-          signalLedger.updateExecutionResult(signal.signal_id, 'EXECUTED', {
-            position_ticket: ticketToClose || res.position_ticket,
-            execution_message: res.status === 'NO_POSITION'
-              ? 'Position already closed (TP/SL hit)'
-              : (res.message || 'Position closed successfully'),
-            latency_ms: Date.now() - startTime,
-            executed_price: res.executed_price
-          });
-
-          wsTelemetry.broadcast({
-            type: 'SIGNAL_EXECUTED',
-            payload: { signal_id: signal.signal_id, status: 'EXECUTED', ticket: ticketToClose || res.position_ticket }
-          });
-        } else {
-          signalLedger.updateExecutionResult(signal.signal_id, 'FAILED', {
-            execution_message: res.message || 'Position close rejected by broker'
-          });
-        }
-      } catch (err: any) {
-        signalLedger.updateExecutionResult(signal.signal_id, 'FAILED', {
-          execution_message: `Close error: ${err.message}`
-        });
-      }
-      return;
-    }
-
-    // ----------------------------------------------------
-    // CASE B: ENTRY (BUY / SELL)
-    // ----------------------------------------------------
-    const lot = brokerNormalizer.normalizeLot(symbol, signal.lot);
-    const clampedStops = brokerNormalizer.clampStops(symbol, signal.action, signal.price || 0, signal.sl, signal.tp);
-
-    // Register in-flight barrier promise
-    let resolveInFlight: (ticket: number | null) => void;
-    const inFlightPromise = new Promise<number | null>((resolve) => {
-      resolveInFlight = resolve;
-    });
-    positionTracker.registerInFlight(signal.strategy, signal.symbol, inFlightPromise);
-
-    try {
-      const res = await mt5TcpHub.sendCommand({
-        action: 'ORDER_SEND',
-        request_id: `order_${signal.signal_id}`,
-        strategy: signal.strategy,
-        magic,
-        symbol,
-        trade_type: signal.action,
-        lot,
-        sl: clampedStops.sl,
-        tp: clampedStops.tp,
-        max_deviation: signal.deviation || 30
-      });
-
-      if (res.status === 'EXECUTED') {
-        const positionTicket = Number(res.position_ticket || res.order_ticket);
-        resolveInFlight!(positionTicket);
-
-        positionTracker.recordOpenPosition({
-          strategy: signal.strategy,
-          symbol: signal.symbol,
-          position_ticket: positionTicket,
-          order_ticket: res.order_ticket ? Number(res.order_ticket) : undefined,
-          deal_ticket: res.deal_ticket ? Number(res.deal_ticket) : undefined,
-          magic,
-          action: signal.action,
-          lot,
-          open_price: res.executed_price || 0,
-          sl: clampedStops.sl,
-          tp: clampedStops.tp
-        });
-
-        const currentAccount = mt5TcpHub.getAccountData();
-        tradeLedgerService.recordOpenTrade({
-          ticket: positionTicket,
-          strategy: signal.strategy,
-          symbol: signal.symbol,
-          action: signal.action,
-          lot,
-          open_price: res.executed_price || 0,
-          sl: clampedStops.sl,
-          tp: clampedStops.tp,
-          equity: currentAccount?.equity || 629.82,
-          balance: currentAccount?.balance || 629.82,
-          comment: `TV Webhook Order: ${signal.strategy}`
-        });
-
-        signalLedger.updateExecutionResult(signal.signal_id, 'EXECUTED', {
-          order_ticket: res.order_ticket,
-          deal_ticket: res.deal_ticket,
-          position_ticket: positionTicket,
-          execution_message: 'Order filled successfully',
-          latency_ms: Date.now() - startTime,
-          executed_price: res.executed_price
-        });
-
-        wsTelemetry.broadcast({
-          type: 'SIGNAL_EXECUTED',
-          payload: { signal_id: signal.signal_id, status: 'EXECUTED', ticket: positionTicket }
-        });
-      } else {
-        resolveInFlight!(null);
-        signalLedger.updateExecutionResult(signal.signal_id, 'FAILED', {
-          execution_message: res.message || 'Order rejected by MT5 broker'
-        });
-      }
-    } catch (err: any) {
-      resolveInFlight!(null);
-      signalLedger.updateExecutionResult(signal.signal_id, 'FAILED', {
-        execution_message: `Execution error: ${err.message}`
-      });
+  // Broadcast to frontend live blotter that signal was monitored & recorded
+  wsTelemetry.broadcast({
+    type: 'SIGNAL_EXECUTED',
+    payload: {
+      signal_id: signal.signal_id,
+      status: 'MONITORED',
+      execution_message: 'Signal logged in monitor mode (Order execution disabled on main)'
     }
   });
 }

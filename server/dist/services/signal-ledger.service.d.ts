@@ -21,7 +21,7 @@ export interface SignalRecord {
 }
 declare class SignalLedgerService {
     createSignal(signal: TradingSignal): number;
-    updateExecutionResult(signalId: string, status: 'EXECUTED' | 'FAILED' | 'DROPPED', data: {
+    updateExecutionResult(signalId: string, status: 'EXECUTED' | 'FAILED' | 'DROPPED' | 'MONITORED', data: {
         order_ticket?: string | number | null;
         deal_ticket?: string | number | null;
         position_ticket?: string | number | null;

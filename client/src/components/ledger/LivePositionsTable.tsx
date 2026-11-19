@@ -119,11 +119,11 @@ export const LivePositionsTable: React.FC<LivePositionsTableProps> = ({
                     </td>
                     <td className="pr-3 pl-2 py-1 text-right">
                       <button
-                        onClick={() => onClosePosition(pos.ticket)}
-                        title={`Close position #${pos.ticket}`}
-                        className="px-2 py-0.5 rounded-control text-xs text-secondary hover:text-sell hover:bg-sell/10 border border-hairline hover:border-sell/30 transition-colors cursor-pointer"
+                        disabled={true}
+                        title="Position closing is disabled in monitor-only mode on main"
+                        className="px-2 py-0.5 rounded-control text-xs text-tertiary border border-hairline bg-raised/40 cursor-not-allowed opacity-60"
                       >
-                        Close
+                        Close (Disabled)
                       </button>
                     </td>
                   </tr>

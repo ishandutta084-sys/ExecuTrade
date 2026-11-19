@@ -1,11 +1,8 @@
 import { signalLedger } from '../services/signal-ledger.service.js';
 import { TestSignalSchema } from '../schemas/signal.schema.js';
 import { handleTradingViewWebhook } from './webhook.controller.js';
-import { mt5TcpHub } from '../socket/mt5-tcp-hub.js';
-import { brokerNormalizer } from '../core/broker-normalizer.js';
-import { tradeLedgerService } from '../services/trade-ledger.service.js';
-import { wsTelemetry } from '../services/ws-telemetry.service.js';
 import { env } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 export async function getSignals(req, reply) {
     const query = req.query;
     const limit = query.limit ? parseInt(query.limit) : 100;
@@ -42,89 +39,10 @@ export async function postTestSignal(req, reply) {
 }
 export async function executeManualOrder(req, reply) {
     const body = req.body;
-    const rawSymbol = (body.symbol || 'XAUUSD').toUpperCase().trim();
-    const action = (body.action || 'BUY').toUpperCase();
-    const lot = body.lot || 0.01;
-    const sl = body.sl || 0;
-    const tp = body.tp || 0;
-    const strategy = body.strategy || 'MANUAL';
-    const brokerSymbol = brokerNormalizer.resolveSymbol(rawSymbol);
-    const normalizedLot = brokerNormalizer.normalizeLot(brokerSymbol, lot);
-    const clampedStops = brokerNormalizer.clampStops(brokerSymbol, action, 0, sl, tp);
-    const signalId = `MANUAL-${Date.now()}`;
-    try {
-        const res = await mt5TcpHub.sendCommand({
-            action: 'ORDER_SEND',
-            request_id: `order_${signalId}`,
-            strategy,
-            magic: 0,
-            symbol: brokerSymbol,
-            trade_type: action,
-            lot: normalizedLot,
-            sl: clampedStops.sl,
-            tp: clampedStops.tp,
-            max_deviation: 30
-        });
-        if (res.status === 'EXECUTED') {
-            const positionTicket = Number(res.position_ticket || res.order_ticket);
-            const currentAccount = mt5TcpHub.getAccountData();
-            tradeLedgerService.recordOpenTrade({
-                ticket: positionTicket,
-                strategy,
-                symbol: brokerSymbol,
-                action,
-                lot: normalizedLot,
-                open_price: res.executed_price || 0,
-                sl: clampedStops.sl,
-                tp: clampedStops.tp,
-                equity: currentAccount?.equity || 629.82,
-                balance: currentAccount?.balance || 629.82,
-                comment: `Manual Dispatch: ${strategy}`
-            });
-            signalLedger.recordManualExecution({
-                signal_id: signalId,
-                strategy,
-                action,
-                symbol: brokerSymbol,
-                lot: normalizedLot,
-                open_price: res.executed_price || 0,
-                sl: clampedStops.sl,
-                tp: clampedStops.tp,
-                order_ticket: positionTicket,
-                status: 'EXECUTED',
-                execution_message: `Manual Order #${positionTicket} (${action} ${normalizedLot} ${brokerSymbol}) executed at ${res.executed_price}`
-            });
-            wsTelemetry.broadcast({
-                type: 'SIGNAL_RECEIVED',
-                payload: {
-                    signal_id: signalId,
-                    strategy,
-                    action,
-                    symbol: brokerSymbol,
-                    lot: normalizedLot,
-                    status: 'EXECUTED'
-                }
-            });
-            return reply.send({
-                status: 'SUCCESS',
-                signal_id: signalId,
-                ticket: positionTicket,
-                executed_price: res.executed_price,
-                message: 'Manual trade executed successfully'
-            });
-        }
-        else {
-            return reply.status(400).send({
-                status: 'FAILED',
-                error: res.message || 'Execution failed on MT5'
-            });
-        }
-    }
-    catch (err) {
-        return reply.status(500).send({
-            status: 'ERROR',
-            error: `Execution timeout or socket error: ${err.message}`
-        });
-    }
+    logger.warn({ body }, 'Blocked attempt to execute manual order: Order execution is disabled on main branch');
+    return reply.status(403).send({
+        status: 'DISABLED',
+        message: 'Order execution is disabled on the main branch. ExecuTrade is running in monitor-only mode.'
+    });
 }
 //# sourceMappingURL=signals.controller.js.map

@@ -7,7 +7,7 @@ export interface Signal {
   lot: number;
   sl: number;
   tp: number;
-  status: 'PENDING' | 'PROCESSING' | 'EXECUTED' | 'FAILED' | 'DROPPED';
+  status: 'PENDING' | 'PROCESSING' | 'EXECUTED' | 'FAILED' | 'DROPPED' | 'MONITORED';
   order_ticket?: string | null;
   deal_ticket?: string | null;
   position_ticket?: string | null;

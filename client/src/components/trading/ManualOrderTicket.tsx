@@ -102,62 +102,12 @@ export const ManualOrderTicket: React.FC<ManualOrderTicketProps> = ({
 
   const spread = Number((askPrice - bidPrice).toFixed(2));
 
-  // Submit Order to backend
+  // Submit Order to backend (Disabled on main branch)
   const handlePlaceOrder = async () => {
-    setIsSubmitting(true);
-    setFeedback(null);
-
-    const targetPrice = isLimitEnabled ? parseFloat(limitPrice) : currentPrice;
-    const slVal = isTpSlEnabled && stopLoss ? parseFloat(stopLoss) : 0;
-    const tpVal = isTpSlEnabled && takeProfit ? parseFloat(takeProfit) : 0;
-
-    const payload = {
-      signal_id: `MANUAL-${Date.now()}`,
-      strategy: strategyTag,
-      action,
-      symbol: symbol.toUpperCase().trim(),
-      lot,
-      price: targetPrice,
-      sl: slVal,
-      tp: tpVal
-    };
-
-    try {
-      let res = await fetch('/api/manual-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        res = await fetch('/api/test-signal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      }
-
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.message || errJson.error || 'Bridge rejected order');
-      }
-
-      const resJson = await res.json();
-      setFeedback({
-        type: 'success',
-        message: `${action} ${lot} ${symbol} @ ${currentPrice.toFixed(2)} dispatched! Ticket: #${resJson.ticket || resJson.order_ticket || 'OK'}`
-      });
-
-      onSignalDispatched();
-      setTimeout(() => setFeedback(null), 5000);
-    } catch (err: any) {
-      setFeedback({
-        type: 'error',
-        message: err.message || 'Transmission failed. Verify MT5 bridge status.'
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    setFeedback({
+      type: 'error',
+      message: 'Order execution is disabled on main branch (Monitor-only mode active).'
+    });
   };
 
   return (
@@ -471,34 +421,23 @@ export const ManualOrderTicket: React.FC<ManualOrderTicketProps> = ({
         </div>
       )}
 
-      {/* 7. Big Prominent Action Button (Image 3 Reference) */}
+      {/* 7. Action Button Disabled on Main (Monitor Mode) */}
       <button
         type="button"
-        onClick={handlePlaceOrder}
-        disabled={isSubmitting}
-        className={`w-full py-3 px-4 rounded-xl text-white font-bold transition-all cursor-pointer shadow-lg flex items-center justify-between disabled:opacity-50 ${
-          action === 'BUY'
-            ? 'bg-[#10B981] hover:bg-[#0EA271] shadow-emerald-950/40 ring-1 ring-emerald-400/50'
-            : 'bg-[#EF4444] hover:bg-[#DC2626] shadow-rose-950/40 ring-1 ring-rose-400/50'
-        }`}
+        disabled={true}
+        className="w-full py-3 px-4 rounded-xl text-slate-400 font-bold bg-[#132038] border border-[#1E293B] shadow-inner flex items-center justify-between cursor-not-allowed opacity-80"
       >
         <div className="text-left">
-          <div className="text-[11px] font-semibold opacity-90 leading-tight">
-            Place Order at
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-400/90 leading-tight">
+            Order Placement Disabled
           </div>
-          <div className="text-lg font-extrabold font-mono tracking-tight tabular-nums mt-0.5">
-            {currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className="text-sm font-bold font-mono tracking-tight tabular-nums mt-0.5 text-slate-300">
+            Monitor Mode Active
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          {isSubmitting ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : action === 'BUY' ? (
-            <ArrowUpRight className="w-6 h-6 stroke-[2.5]" />
-          ) : (
-            <ArrowDownRight className="w-6 h-6 stroke-[2.5]" />
-          )}
+        <div className="px-2 py-1 rounded bg-[#1E293B] text-[10px] font-mono text-slate-400 font-semibold border border-slate-700">
+          READ ONLY
         </div>
       </button>
     </div>
